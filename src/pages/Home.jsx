@@ -1,63 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ProductCard from '../components/product/ProductCard';
 import { productsData } from '../data/products';
-
-// =========================
-// HERO COMPONENT (Merged inside)
-// =========================
-const heroImages = ['Hero', 'Hero1', 'Hero2'];
-
-function HeroSection() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % heroImages.length);
-    }, 4000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <div className="hero-section">
-      {heroImages.map((name, index) => (
-        <div 
-          key={index} 
-          className="hero-slide" 
-          style={{ 
-            display: index === currentIndex ? 'block' : 'none',
-            width: '100%' 
-          }}
-        >
-          <HeroSlide imageName={name} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function HeroSlide({ imageName }) {
-  const extensions = ['.jpg', '.avif', '.png', '.webp', ''];
-  const [extIndex, setExtIndex] = useState(0);
-
-  const currentSrc = `/images/Hero/${imageName}${extensions[extIndex]}`;
-
-  const handleError = () => {
-    if (extIndex < extensions.length - 1) {
-      setExtIndex(extIndex + 1);
-    }
-  };
-
-  return (
-    <div className="hero-banner">
-      <img 
-        src={currentSrc} 
-        alt={imageName} 
-        onError={handleError}
-      />
-    </div>
-  );
-}
 
 // =========================
 // HOME COMPONENT
@@ -98,42 +41,16 @@ export default function Home() {
   return (
     <>
       <style>{`
-        .hero-section {
-          width: 100%;
-          margin: 0;
-          padding: 0;
-          background: #f4eee8;
-          overflow: hidden;
-          position: relative;
-        }
-
-        .hero-banner {
-          width: 100%;
-          margin: 0;
-          padding: 0;
-          line-height: 0;
-          overflow: hidden;
-        }
-
-        .hero-banner img {
-          display: block;
-          width: 100%;
-          height: auto;
-          max-width: 100%;
-          object-fit: contain;
-          object-position: center;
-        }
-
         .our-collection {
           width: 100%;
           background: #ffffff;
-          padding: 60px 20px 30px;
+          padding: 30px 20px;
           text-align: center;
           box-sizing: border-box;
         }
 
         .our-collection h2 {
-          margin: 0 0 40px;
+          margin: 0 0 20px;
           color: #1a1a1a;
           font-family: 'Playfair Display', serif, Arial;
           font-size: 38px;
@@ -145,7 +62,7 @@ export default function Home() {
           display: flex;
           justify-content: center;
           align-items: center;
-          gap: 40px;
+          gap: 20px;
           flex-wrap: wrap;
           max-width: 1200px;
           margin: 0 auto;
@@ -153,37 +70,28 @@ export default function Home() {
 
         .collection-round-item {
           display: flex;
-          flex-direction: column;
           align-items: center;
+          justify-content: center;
+          padding: 10px 20px;
+          background: #f9f6f0;
+          border: 1px solid #b8860b;
+          border-radius: 25px;
           text-decoration: none;
-          transition: transform 0.3s ease;
+          transition: transform 0.2s ease, background-color 0.2s ease;
         }
 
         .collection-round-item:hover {
-          transform: translateY(-6px);
+          transform: translateY(-3px);
+          background: #b8860b;
         }
 
-        .round-image-wrapper {
-          width: 130px;
-          height: 130px;
-          border-radius: 50%;
-          overflow: hidden;
-          border: 3px solid #b8860b;
-          margin-bottom: 14px;
-          box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
-          background: #f9f6f0;
-        }
-
-        .round-image-wrapper img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: center;
+        .collection-round-item:hover .round-category-name {
+          color: #ffffff;
         }
 
         .round-category-name {
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 600;
           color: #222222;
           letter-spacing: 1px;
@@ -217,69 +125,34 @@ export default function Home() {
         }
 
         @media (max-width: 900px) {
-          .round-image-wrapper {
-            width: 100px;
-            height: 100px;
-          }
           .collection-round-grid {
-            gap: 20px;
+            gap: 12px;
           }
           .our-collection h2, .most-loved h2 {
             font-size: 28px;
           }
         }
-
-        @media (max-width: 500px) {
-          .round-image-wrapper {
-            width: 80px;
-            height: 80px;
-          }
-          .round-category-name {
-            font-size: 11px;
-          }
-          .collection-round-grid {
-            gap: 15px;
-          }
-        }
       `}</style>
-
-      {/* HERO BANNER SECTION */}
-      <HeroSection />
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '30px 20px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         
-        {/* OUR COLLECTION (Round Categories - Fully Fixed & Polished) */}
+        {/* OUR COLLECTION (Category Pills) */}
         <div className="our-collection">
           <h2>Our Collection</h2>
           <div className="collection-round-grid">
             <a href="#bridal" className="collection-round-item">
-              <div className="round-image-wrapper">
-                <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&auto=format&fit=crop&q=80" alt="Bridal" />
-              </div>
               <span className="round-category-name">Bridal</span>
             </a>
             <a href="#necklaces" className="collection-round-item">
-              <div className="round-image-wrapper">
-                <img src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&auto=format&fit=crop&q=80" alt="Necklaces" />
-              </div>
               <span className="round-category-name">Necklaces</span>
             </a>
             <a href="#rings" className="collection-round-item">
-              <div className="round-image-wrapper">
-                <img src="https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=400&auto=format&fit=crop&q=80" alt="Rings" />
-              </div>
               <span className="round-category-name">Rings</span>
             </a>
             <a href="#earrings" className="collection-round-item">
-              <div className="round-image-wrapper">
-                <img src="https://images.unsplash.com/photo-1630019852942-f89202989a59?w=400&auto=format&fit=crop&q=80" alt="Earrings" />
-              </div>
               <span className="round-category-name">Earrings</span>
             </a>
             <a href="#bracelets" className="collection-round-item">
-              <div className="round-image-wrapper">
-                <img src="https://images.unsplash.com/photo-1611591472152-d128a8d15446?w=400&auto=format&fit=crop&q=80" alt="Bracelets" />
-              </div>
               <span className="round-category-name">Bracelets</span>
             </a>
           </div>
