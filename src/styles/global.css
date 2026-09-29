@@ -43,7 +43,6 @@ img { max-width: 100%; height: auto; }
 
 .page-section { padding: 80px 0; }
 
-/* shared buttons */
 .btn { 
   display: inline-flex; 
   align-items: center; 
@@ -64,7 +63,6 @@ img { max-width: 100%; height: auto; }
 .btn-light { background: var(--white); color: var(--ink); }
 .btn-light:hover { background: var(--ink); color: var(--white); }
 
-/* header */
 .site-header { position: sticky; top: 0; z-index: 1000; background: rgba(255,255,255,.98); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
 .announcement { height: 36px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; gap: 15px; background: var(--ink); color: #fff; font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; font-weight: 500; }
 .announcement-center { opacity: .8; }
@@ -90,7 +88,6 @@ img { max-width: 100%; height: auto; }
 .category-inner { height: 32px; display: flex; justify-content: center; align-items: center; gap: 14px; color: #817a72; font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500; }
 .category-inner i { width: 3px; height: 3px; border-radius: 50%; background: var(--gold); }
 
-/* Responsive Media Queries for Mobile & Tablets */
 @media (max-width: 1100px) {
   .main-nav a { font-size: 10px; letter-spacing: 1px; }
   .header-main { grid-template-columns: 180px 1fr 120px; }
@@ -100,7 +97,7 @@ img { max-width: 100%; height: auto; }
   .container { width: min(100% - 32px, 720px); }
   .page-section { padding: 60px 0; }
   .header-main { display: flex; justify-content: space-between; min-height: 70px; }
-  .main-nav { display: none; } /* Mobile drawer ya menu ke liye handled hoga agar component mein hai */
+  .main-nav { display: none; }
   .mobile-menu { display: block; }
   .brand-name { font-size: 24px; }
 }
@@ -111,5 +108,5 @@ img { max-width: 100%; height: auto; }
   .announcement { font-size: 9px; padding: 0 10px; letter-spacing: 0.8px; }
   .brand-name { font-size: 22px; }
   .brand-sub { font-size: 8px; letter-spacing: 1.5px; }
-  body { font-size: 14px; } /* Mobile par text mazeed readable aur compact rahega */
+  body { font-size: 14px; }
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
-import ProductCard from '../components/product/ProductCard';
+import ProductCard from '../components/ProductCard';
 
 export default function Wishlist() {
   const { wishlist } = useCart();

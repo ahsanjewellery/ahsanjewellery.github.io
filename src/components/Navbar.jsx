@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-export default function Navbar() {
+export default function Navbar({ cartCount = 0 }) {
   const [jewelleryOpen, setJewelleryOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -11,20 +11,19 @@ export default function Navbar() {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
+      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
       setIsSearchOpen(false);
+      setSearchQuery('');
     }
   };
 
   const handleSuggestionClick = (term) => {
-    setSearchQuery(term);
     navigate(`/shop?search=${encodeURIComponent(term)}`);
     setIsSearchOpen(false);
   };
 
   return (
     <>
-      {/* Embedded CSS styles directly inside the component */}
       <style>{`
         :root {
           --pink: #e90d8b;
@@ -55,12 +54,13 @@ export default function Navbar() {
           position: sticky;
           top: 0;
           z-index: 1000;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
         .navbar-main {
           position: relative;
           width: 100%;
-          height: 104px;
+          height: 110px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -93,6 +93,7 @@ export default function Navbar() {
           transform: translateY(-2px);
         }
 
+        /* CENTER LOGO - ENLARGED & CLEAN (NO PINK HOVER) */
         .navbar-logo {
           position: absolute;
           left: 50%;
@@ -106,16 +107,11 @@ export default function Navbar() {
         }
 
         .navbar-logo img {
-          width: 190px;
+          width: 240px;
           height: auto;
-          max-height: 82px;
+          max-height: 95px;
           object-fit: contain;
-          transition: transform 0.3s ease, filter 0.3s ease;
-        }
-
-        .navbar-logo:hover img {
-          transform: scale(1.08);
-          filter: drop-shadow(0 0 5px rgba(233, 13, 139, 0.55)) drop-shadow(0 0 14px rgba(233, 13, 139, 0.28));
+          display: block;
         }
 
         .navbar-right {
@@ -190,15 +186,16 @@ export default function Navbar() {
         }
 
         .cart-link b {
-          width: 18px;
+          min-width: 18px;
           height: 18px;
+          padding: 0 4px;
           display: flex;
           align-items: center;
           justify-content: center;
           border-radius: 50%;
           background: var(--pink);
           color: #fff;
-          font-size: 9px;
+          font-size: 10px;
           font-weight: 700;
         }
 
@@ -264,6 +261,7 @@ export default function Navbar() {
           background: #fff;
           border: 1px solid #eee;
           box-shadow: 0 15px 35px rgba(0, 0, 0, 0.14);
+          z-index: 1010;
         }
 
         .dropdown-menu a {
@@ -344,32 +342,7 @@ export default function Navbar() {
         }
 
         .menu-close-btn:hover {
-          color: #e30613;
-        }
-
-        .menu-top-tabs {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 14px 0 22px 0;
-          border-bottom: 1px solid #dcdcdc;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.8px;
-          color: #222;
-        }
-
-        .menu-top-tabs span {
-          cursor: pointer;
-          transition: color 0.2s ease;
-        }
-
-        .menu-top-tabs span.active-tab {
-          color: #e30613;
-        }
-
-        .menu-top-tabs span:hover {
-          color: #e30613;
+          color: var(--pink);
         }
 
         .menu-links-list {
@@ -392,67 +365,8 @@ export default function Navbar() {
           transition: color 0.2s ease;
         }
 
-        .menu-links-list a span {
-          font-size: 16px;
-          font-weight: 400;
-          color: #888;
-        }
-
         .menu-links-list a:hover {
-          color: #e30613;
-        }
-
-        .menu-promo-section {
-          margin-top: 10px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          padding-bottom: 30px;
-        }
-
-        .menu-promo-card {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-          background: #fdf6f9;
-          padding: 12px 14px;
-          border-radius: 4px;
-          text-decoration: none;
-          border: 1px solid #fae4ee;
-          transition: background 0.2s ease;
-        }
-
-        .menu-promo-card:hover {
-          background: #fae4ee;
-        }
-
-        .promo-img-thumb {
-          width: 52px;
-          height: 52px;
-          object-fit: cover;
-          border-radius: 4px;
-          border: 1px solid #ddd;
-        }
-
-        .promo-text h4 {
-          margin: 0;
-          font-size: 11px;
-          font-weight: 800;
-          color: #e30613;
-          letter-spacing: 0.5px;
-        }
-
-        .promo-text p {
-          margin: 3px 0;
-          font-size: 12px;
-          font-weight: 600;
-          color: #222;
-        }
-
-        .promo-text span {
-          font-size: 10px;
-          color: #666;
-          text-decoration: underline;
+          color: var(--pink);
         }
 
         .search-overlay-modal {
@@ -514,14 +428,6 @@ export default function Navbar() {
           cursor: pointer;
           color: #111;
           padding: 5px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: color 0.2s ease;
-        }
-
-        .search-close-btn:hover {
-          color: var(--pink);
         }
 
         .search-overlay-input-wrapper {
@@ -534,11 +440,6 @@ export default function Navbar() {
           background: #fff;
           height: 50px;
           margin-bottom: 30px;
-          transition: border-color 0.2s ease;
-        }
-
-        .search-overlay-input-wrapper:focus-within {
-          border-color: #111;
         }
 
         .search-overlay-input {
@@ -548,25 +449,6 @@ export default function Navbar() {
           font-size: 14px;
           color: #333;
           background: transparent;
-        }
-
-        .search-overlay-input::placeholder {
-          color: #888;
-        }
-
-        .search-overlay-icon-btn {
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #333;
-          padding: 0;
-        }
-
-        .search-suggestions-section {
-          margin-top: 10px;
         }
 
         .suggestions-heading {
@@ -590,7 +472,6 @@ export default function Navbar() {
           padding: 14px 0;
           border-bottom: 1px solid #f0f0f0;
           cursor: pointer;
-          letter-spacing: 0.5px;
           transition: color 0.2s ease;
         }
 
@@ -599,9 +480,9 @@ export default function Navbar() {
         }
 
         @media (max-width: 900px) {
-          .navbar-main { padding: 0 3%; }
+          .navbar-main { padding: 0 3%; height: 95px; }
           .navbar-left, .navbar-right { width: 180px; }
-          .navbar-logo img { width: 165px; }
+          .navbar-logo img { width: 180px; }
           .navbar-right { gap: 14px; }
           .nav-link { padding: 0 14px; font-size: 11px; }
         }
@@ -609,9 +490,9 @@ export default function Navbar() {
         @media (max-width: 650px) {
           .top-bar { height: 32px; }
           .top-bar p { font-size: 10px; }
-          .navbar-main { height: 88px; padding: 0 18px; }
+          .navbar-main { height: 85px; padding: 0 18px; }
           .navbar-left, .navbar-right { width: auto; }
-          .navbar-logo img { width: 135px; }
+          .navbar-logo img { width: 150px; }
           .navbar-right { gap: 10px; }
           .cart-link span { display: none; }
           .navbar-menu { height: 46px; }
@@ -684,7 +565,7 @@ export default function Navbar() {
                 <path d="M9 8a3 3 0 0 1 6 0" />
               </svg>
               <span>Cart</span>
-              <b>0</b>
+              <b>{cartCount}</b>
             </Link>
           </div>
         </div>
@@ -716,11 +597,11 @@ export default function Navbar() {
               )}
             </div>
 
-            <Link to="/shop" className="nav-link">New Arrivals</Link>
-            <Link to="/shop" className="nav-link">Collections</Link>
+            <Link to="/shop?category=new-arrivals" className="nav-link">New Arrivals</Link>
+            <Link to="/shop?category=collections" className="nav-link">Collections</Link>
             <Link to="/about" className="nav-link">About Us</Link>
             <Link to="/contact" className="nav-link">Contact</Link>
-            <Link to="/sale" className="nav-link nav-sale">Sale</Link>
+            <Link to="/shop?category=sale" className="nav-link nav-sale">Sale</Link>
           </div>
         </nav>
       </header>
@@ -734,54 +615,14 @@ export default function Navbar() {
               <button className="menu-close-btn" onClick={() => setIsMenuOpen(false)} type="button">✕</button>
             </div>
 
-            <div className="menu-top-tabs">
-              <span className="active-tab">WOMEN</span>
-              <span>KIDS</span>
-              <span>BRIDES</span>
-              <span>MEN</span>
-              <span>SPECIAL OFFERS</span>
-            </div>
-
             <div className="menu-links-list">
               <Link to="/shop?category=new-arrivals" onClick={() => setIsMenuOpen(false)}>NEW ARRIVALS</Link>
-              <Link to="/shop?category=bridal-sets" onClick={() => setIsMenuOpen(false)}>BRIDAL SETS <span>+</span></Link>
-              <Link to="/shop?category=necklaces" onClick={() => setIsMenuOpen(false)}>NECKLACES &amp; PENDANTS <span>+</span></Link>
-              <Link to="/shop?category=rings" onClick={() => setIsMenuOpen(false)}>RINGS &amp; BANDS <span>+</span></Link>
-              <Link to="/shop?category=earrings" onClick={() => setIsMenuOpen(false)}>EARRINGS &amp; JHUMKAS <span>+</span></Link>
-              <Link to="/shop?category=bangles-bracelets" onClick={() => setIsMenuOpen(false)}>BANGLES &amp; BRACELETS <span>+</span></Link>
+              <Link to="/shop?category=bridal-sets" onClick={() => setIsMenuOpen(false)}>BRIDAL SETS</Link>
+              <Link to="/shop?category=necklaces" onClick={() => setIsMenuOpen(false)}>NECKLACES &amp; PENDANTS</Link>
+              <Link to="/shop?category=rings" onClick={() => setIsMenuOpen(false)}>RINGS &amp; BANDS</Link>
+              <Link to="/shop?category=earrings" onClick={() => setIsMenuOpen(false)}>EARRINGS &amp; JHUMKAS</Link>
+              <Link to="/shop?category=bangles-bracelets" onClick={() => setIsMenuOpen(false)}>BANGLES &amp; BRACELETS</Link>
               <Link to="/shop?category=polki-kundan" onClick={() => setIsMenuOpen(false)}>POLKI &amp; KUNDAN</Link>
-              <Link to="/shop?category=diamond-collection" onClick={() => setIsMenuOpen(false)}>DIAMOND COLLECTION <span>+</span></Link>
-              <Link to="/shop?category=silver-jewellery" onClick={() => setIsMenuOpen(false)}>SILVER JEWELLERY <span>+</span></Link>
-              <Link to="/shop?category=best-sellers" onClick={() => setIsMenuOpen(false)}>BEST SELLERS</Link>
-            </div>
-
-            <div className="menu-promo-section">
-              <Link to="/shop?collection=bridal" className="menu-promo-card" onClick={() => setIsMenuOpen(false)}>
-                <img src="/images/bridal-set.jpg" alt="Bridal Sets" className="promo-img-thumb" />
-                <div className="promo-text">
-                  <h4>UP TO 50% OFF</h4>
-                  <p>Bridal Sets</p>
-                  <span>Avail Discount</span>
-                </div>
-              </Link>
-
-              <Link to="/shop?collection=luxury" className="menu-promo-card" onClick={() => setIsMenuOpen(false)}>
-                <img src="/images/necklace.jpg" alt="Luxury Necklaces" className="promo-img-thumb" />
-                <div className="promo-text">
-                  <h4>UP TO 50% OFF</h4>
-                  <p>Luxury Necklaces</p>
-                  <span>Avail Discount</span>
-                </div>
-              </Link>
-
-              <Link to="/shop?collection=rings" className="menu-promo-card" onClick={() => setIsMenuOpen(false)}>
-                <img src="/images/ring.jpg" alt="Diamond Rings" className="promo-img-thumb" />
-                <div className="promo-text">
-                  <h4>UP TO 50% OFF</h4>
-                  <p>Diamond Rings</p>
-                  <span>Avail Discount</span>
-                </div>
-              </Link>
             </div>
           </div>
         </div>
@@ -805,7 +646,7 @@ export default function Navbar() {
                 autoFocus
                 className="search-overlay-input"
               />
-              <button type="submit" className="search-overlay-icon-btn">
+              <button type="submit" style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="7" />
                   <path d="M20 20l-4-4" />

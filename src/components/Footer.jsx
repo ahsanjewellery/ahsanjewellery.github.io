@@ -1,11 +1,12 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
     <>
       <style>{`
         /* =========================
-           FOOTER
+           FOOTER STYLES
         ========================= */
 
         .footer {
@@ -141,25 +142,25 @@ export default function Footer() {
 
           <div className="footer-column">
             <h3>SHOP</h3>
-            <a href="/shop">All Jewellery</a>
-            <a href="/shop">New Arrivals</a>
-            <a href="/shop">Collections</a>
-            <a href="/shop">Sale</a>
+            <Link to="/shop">All Jewellery</Link>
+            <Link to="/shop">New Arrivals</Link>
+            <Link to="/shop">Collections</Link>
+            <Link to="/shop">Sale</Link>
           </div>
 
           <div className="footer-column">
             <h3>HELP</h3>
-            <a href="/contact">Contact Us</a>
-            <a href="/shipping">Shipping</a>
-            <a href="/returns">Returns</a>
-            <a href="/faq">FAQ</a>
+            <Link to="/contact">Contact Us</Link>
+            <Link to="/shipping">Shipping</Link>
+            <Link to="/returns">Returns</Link>
+            <Link to="/faq">FAQ</Link>
           </div>
 
           <div className="footer-column">
             <h3>FOLLOW US</h3>
-            <a href="#">Instagram</a>
-            <a href="#">Facebook</a>
-            <a href="#">WhatsApp</a>
+            <a href="https://instagram.com" target="_blank" rel="noreferrer">Instagram</a>
+            <a href="https://facebook.com" target="_blank" rel="noreferrer">Facebook</a>
+            <a href="https://wa.me/" target="_blank" rel="noreferrer">WhatsApp</a>
           </div>
         </div>
 

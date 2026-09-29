@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { productsData } from '../data/products';
-import ProductCard from '../components/product/ProductCard';
+import ProductCard from '../components/ProductCard';
 
 const categories = ['All', 'Rings', 'Necklaces', 'Earrings', 'Bracelets'];
 

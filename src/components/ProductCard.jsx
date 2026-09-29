@@ -4,17 +4,24 @@ import { useNavigate } from 'react-router-dom';
 export default function ProductCard({ product }) {
   const [isHovered, setIsHovered] = useState(false);
   const [showQuickView, setShowQuickView] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(product.image);
+  const navigate = useNavigate();
+
+  if (!product) return null;
+
+  const originalPrice = product.originalPrice || product.price || 0;
+  const discountedPrice = product.price || Math.round(originalPrice * 0.75);
+  const mainImage = product.image || 'https://placehold.co/400x500?text=No+Image';
+  const imagesList = (product.variants && product.variants.length > 0)
+    ? product.variants.map(v => v.image || mainImage)
+    : [mainImage];
+
+  const [selectedImage, setSelectedImage] = useState(mainImage);
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState('bronze');
   const [isDescOpen, setIsDescOpen] = useState(false);
   const [isCareOpen, setIsCareOpen] = useState(false);
-  
-  const navigate = useNavigate();
 
-  const originalPrice = product.price;
-  const discountedPrice = Math.round(originalPrice * 0.75);
-  const imagesList = product.images || [product.image, product.image, product.image];
+  const productId = product.id || product._id;
 
   return (
     <>
@@ -63,7 +70,6 @@ export default function ProductCard({ product }) {
           transform: scale(1.03);
         }
 
-        /* Hover Action Bar */
         .maria-hover-bar {
           position: absolute;
           bottom: 12px;
@@ -91,17 +97,8 @@ export default function ProductCard({ product }) {
           font-size: 13px;
           font-weight: 500;
           color: #111;
-          letter-spacing: 0.02em;
         }
 
-        .maria-icons {
-          display: flex;
-          gap: 12px;
-          color: #333;
-          font-size: 15px;
-        }
-
-        /* Product Info */
         .maria-info-container {
           padding-top: 12px;
           display: flex;
@@ -112,10 +109,9 @@ export default function ProductCard({ product }) {
 
         .maria-product-title {
           font-size: 14px;
-          font-weight: 400;
+          font-weight: 500;
           color: #222222;
           margin: 0;
-          letter-spacing: 0.01em;
         }
 
         .maria-price-box {
@@ -138,28 +134,24 @@ export default function ProductCard({ product }) {
 
       <div 
         className="maria-product-card"
-        onClick={() => navigate(`/product/${product.id}`)}
+        onClick={() => navigate(`/product/${productId}`)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Image Container */}
         <div className="maria-image-container">
-          {product.tag && (
+          {(product.tag || product.discountPercent) && (
             <span className="maria-badge">
-              {product.tag}
+              {product.tag || `${product.discountPercent}% OFF`}
             </span>
           )}
 
           <img 
-            src={product.image} 
-            alt={product.title} 
+            src={mainImage} 
+            alt={product.name || product.title} 
             className="maria-product-img"
-            style={{
-              transform: isHovered ? 'scale(1.03)' : 'scale(1)'
-            }}
+            style={{ transform: isHovered ? 'scale(1.03)' : 'scale(1)' }}
           />
 
-          {/* Hover Action Bar - Fixed spacing and alignment */}
           <div 
             className="maria-hover-bar"
             style={{
@@ -167,26 +159,18 @@ export default function ProductCard({ product }) {
               transform: isHovered ? 'translateY(0)' : 'translateY(10px)'
             }}
           >
-            {/* View Details */}
-            <span className="maria-view-text" style={{ display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
-              View Details <span style={{ fontSize: '14px' }}>&rarr;</span>
+            <span className="maria-view-text" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              View Details <span>&rarr;</span>
             </span>
             
-            {/* Icons Group (Eye + Heart) */}
-            <div className="maria-icons" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {/* Quick View Eye Icon */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div 
                 onClick={(e) => {
                   e.stopPropagation();
+                  setSelectedImage(mainImage);
                   setShowQuickView(true);
                 }}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  padding: '4px'
-                }}
+                style={{ cursor: 'pointer', padding: '4px' }}
                 title="Quick View"
               >
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -195,19 +179,12 @@ export default function ProductCard({ product }) {
                 </svg>
               </div>
 
-              {/* Wishlist Heart Icon */}
               <div 
                 onClick={(e) => {
                   e.stopPropagation();
-                  alert('Added to wishlist!');
+                  alert('Wishlist mein add ho gaya hai!');
                 }}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  padding: '4px'
-                }}
+                style={{ cursor: 'pointer', padding: '4px' }}
                 title="Wishlist"
               >
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -218,18 +195,19 @@ export default function ProductCard({ product }) {
           </div>
         </div>
 
-        {/* Product Title & Prices */}
         <div className="maria-info-container">
           <h3 className="maria-product-title">
-            {product.title}
+            {product.name || product.title}
           </h3>
           
           <div className="maria-price-box">
-            <span className="maria-original-price">
-              Rs.{originalPrice.toLocaleString()}
-            </span>
+            {originalPrice > discountedPrice && (
+              <span className="maria-original-price">
+                Rs.{Number(originalPrice).toLocaleString()}
+              </span>
+            )}
             <span className="maria-discounted-price">
-              Rs.{discountedPrice.toLocaleString()}
+              Rs.{Number(discountedPrice).toLocaleString()}
             </span>
           </div>
         </div>
@@ -259,13 +237,12 @@ export default function ProductCard({ product }) {
             style={{
               backgroundColor: '#fff',
               width: '100%',
-              maxWidth: '950px',
+              maxWidth: '900px',
               borderRadius: '12px',
               display: 'flex',
               flexDirection: 'row',
               position: 'relative',
               overflow: 'hidden',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
               maxHeight: '90vh'
             }}
           >
@@ -279,98 +256,70 @@ export default function ProductCard({ product }) {
                 border: 'none',
                 fontSize: '18px',
                 cursor: 'pointer',
-                zIndex: 10,
-                color: '#333'
+                zIndex: 10
               }}
             >
               ✕
             </button>
 
-            {/* Left Image */}
-            <div style={{ flex: '1', backgroundColor: '#f9f9f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
+            <div style={{ flex: '1', backgroundColor: '#f9f9f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
               <img 
                 src={selectedImage} 
-                alt={product.title} 
-                style={{ width: '100%', maxHeight: '450px', objectFit: 'contain' }}
+                alt={product.name || product.title} 
+                style={{ width: '100%', maxHeight: '400px', objectFit: 'contain' }}
               />
             </div>
 
-            {/* Right Details */}
-            <div style={{ flex: '1', padding: '30px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '500', color: '#111', margin: 0 }}>
-                  {product.title}
-                </h2>
-                <span style={{ fontSize: '11px', backgroundColor: '#f0f0f0', padding: '4px 8px', borderRadius: '4px', color: '#333', fontWeight: '500' }}>
-                  In Stock
+            <div style={{ flex: '1', padding: '30px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#111', margin: 0 }}>
+                {product.name || product.title}
+              </h2>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '18px', fontWeight: '700', color: '#111' }}>
+                  Rs.{Number(discountedPrice).toLocaleString()}
                 </span>
+                {originalPrice > discountedPrice && (
+                  <span style={{ fontSize: '14px', textDecoration: 'line-through', color: '#888' }}>
+                    Rs.{Number(originalPrice).toLocaleString()}
+                  </span>
+                )}
               </div>
 
-              <span style={{ fontSize: '12px', color: '#777', marginTop: '-10px' }}>
-                OPERA-PK-{product.id}
-              </span>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>
-                <span style={{ fontSize: '18px', fontWeight: '600', color: '#111' }}>
-                  Rs.{discountedPrice.toLocaleString()}
-                </span>
-                <span style={{ fontSize: '12px', color: '#555' }}>
-                  3-5 BUSINESS DAYS
-                </span>
-              </div>
-
-              {/* Thumbnails */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {imagesList.map((img, idx) => (
-                  <img 
-                    key={idx}
-                    src={img}
-                    onClick={() => setSelectedImage(img)}
-                    style={{
-                      width: '50px',
-                      height: '60px',
-                      objectFit: 'cover',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      border: selectedImage === img ? '2px solid #111' : '1px solid #ddd'
-                    }}
-                  />
-                ))}
-              </div>
-
-              {/* Color */}
-              <div>
-                <span style={{ fontSize: '12px', fontWeight: '600', color: '#333', display: 'block', marginBottom: '6px' }}>
-                  COLOR: <span style={{ textTransform: 'uppercase', fontWeight: '400' }}>{selectedColor}</span>
-                </span>
+              {imagesList.length > 1 && (
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <div 
-                    onClick={() => setSelectedColor('black')}
-                    style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#111', cursor: 'pointer', border: selectedColor === 'black' ? '2px solid #000' : '2px solid transparent', outline: '1px solid #ccc' }}
-                  />
-                  <div 
-                    onClick={() => setSelectedColor('bronze')}
-                    style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#c68b59', cursor: 'pointer', border: selectedColor === 'bronze' ? '2px solid #000' : '2px solid transparent', outline: '1px solid #ccc' }}
-                  />
+                  {imagesList.map((img, idx) => (
+                    <img 
+                      key={idx}
+                      src={img}
+                      onClick={() => setSelectedImage(img)}
+                      style={{
+                        width: '50px',
+                        height: '50px',
+                        objectFit: 'cover',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        border: selectedImage === img ? '2px solid #111' : '1px solid #ddd'
+                      }}
+                    />
+                  ))}
                 </div>
-              </div>
+              )}
 
-              {/* Quantity */}
               <div>
                 <span style={{ fontSize: '12px', fontWeight: '600', color: '#333', display: 'block', marginBottom: '6px' }}>
                   QUANTITY
                 </span>
-                <div style={{ display: 'inline-flex', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden', alignItems: 'center' }}>
+                <div style={{ display: 'inline-flex', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
                   <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ background: '#f9f9f9', border: 'none', padding: '8px 14px', cursor: 'pointer' }}>-</button>
-                  <span style={{ padding: '0 16px', fontSize: '14px', fontWeight: '500' }}>{quantity}</span>
+                  <span style={{ padding: '8px 16px', fontSize: '14px', fontWeight: '500' }}>{quantity}</span>
                   <button onClick={() => setQuantity(quantity + 1)} style={{ background: '#f9f9f9', border: 'none', padding: '8px 14px', cursor: 'pointer' }}>+</button>
                 </div>
               </div>
 
-              {/* Add to Cart */}
               <button 
                 onClick={() => {
-                  alert(`Added ${quantity} item(s) to cart!`);
+                  alert(`${quantity} item(s) cart mein add ho gaye hain!`);
                   setShowQuickView(false);
                 }}
                 style={{
@@ -382,39 +331,23 @@ export default function ProductCard({ product }) {
                   fontSize: '14px',
                   fontWeight: '600',
                   cursor: 'pointer',
-                  letterSpacing: '0.05em',
                   marginTop: '10px'
                 }}
               >
                 🛒 ADD TO CART
               </button>
 
-              {/* Description Accordion */}
               <div style={{ borderTop: '1px solid #eee', paddingTop: '12px' }}>
-                <div onClick={() => setIsDescOpen(!isDescOpen)} style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer', fontSize: '13px', fontWeight: '500', color: '#333' }}>
+                <div onClick={() => setIsDescOpen(!isDescOpen)} style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}>
                   <span>Description</span>
                   <span>{isDescOpen ? '−' : '+'}</span>
                 </div>
                 {isDescOpen && (
                   <p style={{ fontSize: '12px', color: '#666', marginTop: '8px', lineHeight: '1.5' }}>
-                    Exquisitely crafted luxury jewellery piece featuring premium sparkling stones and high-grade finish designed for special occasions.
+                    {product.description || 'Premium quality jewellery piece.'}
                   </p>
                 )}
               </div>
-
-              {/* Product Care Accordion */}
-              <div style={{ borderTop: '1px solid #eee', paddingTop: '12px', paddingBottom: '10px' }}>
-                <div onClick={() => setIsCareOpen(!isCareOpen)} style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer', fontSize: '13px', fontWeight: '500', color: '#333' }}>
-                  <span>Product Care</span>
-                  <span>{isCareOpen ? '−' : '+'}</span>
-                </div>
-                {isCareOpen && (
-                  <p style={{ fontSize: '12px', color: '#666', marginTop: '8px', lineHeight: '1.5' }}>
-                    Keep away from moisture, perfumes, and harsh chemicals. Store in a dry fabric pouch after use.
-                  </p>
-                )}
-              </div>
-
             </div>
           </div>
         </div>

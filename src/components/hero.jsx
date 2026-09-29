@@ -43,6 +43,7 @@ export default function Hero() {
           padding: 0;
           object-fit: contain;
           object-position: center;
+          transition: opacity 0.5s ease-in-out;
         }
 
         @media (max-width: 900px) {
@@ -63,14 +64,14 @@ export default function Hero() {
       <div className="hero-section">
         {heroImages.map((name, index) => (
           <div 
-            key={index} 
+            key={`${name}-${index}`} 
             className="hero-slide" 
             style={{ 
               display: index === currentIndex ? 'block' : 'none',
               width: '100%' 
             }}
           >
-            <HeroSlide imageName={name} />
+            {index === currentIndex && <HeroSlide imageName={name} />}
           </div>
         ))}
       </div>
@@ -78,7 +79,7 @@ export default function Hero() {
   );
 }
 
-// Extension fallback handler (chahe .jpg ho, .avif ho ya .png)
+// Extension fallback handler (.jpg, .avif, .png, .webp)
 function HeroSlide({ imageName }) {
   const extensions = ['.jpg', '.avif', '.png', '.webp', ''];
   const [extIndex, setExtIndex] = useState(0);
