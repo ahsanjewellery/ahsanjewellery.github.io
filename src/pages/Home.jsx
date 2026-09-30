@@ -3,7 +3,7 @@ import ProductCard from '../components/ProductCard';
 import { db } from '../firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
-export default function Home() {
+function Home() {
   const [columns, setColumns] = useState(3);
   const [showFilter, setShowFilter] = useState(false);
   const [sortOption, setSortOption] = useState('default');
@@ -41,7 +41,7 @@ export default function Home() {
           id: doc.id,
           ...doc.data()
         }));
-        setShopCategories(liveCategories); // Sirf wahi categories jo firebase mein mojood hain
+        setShopCategories(liveCategories);
 
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -239,3 +239,5 @@ export default function Home() {
     </div>
   );
 }
+
+export default Home;

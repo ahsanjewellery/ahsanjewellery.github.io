@@ -4,37 +4,7 @@ import ManageOrders from "../components/ManageOrders";
 import ManageReviews from "../components/ManageReviews";
 import ContactMessages from "../components/ContactMessages";
 import { db } from "../firebase";
-
-// Firebase Storage image uploader.
-// Firestore stores only the returned URL; the actual image stays in Storage.
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
-
-const storage = getStorage();
-
-const uploadImage = async (file, folder = "images") => {
-  if (!file) throw new Error("No image file selected.");
-
-  const safeName = String(file.name || "image.jpg")
-    .replace(/[^a-zA-Z0-9._-]/g, "_");
-
-  const uniqueName = `${Date.now()}_${Math.random()
-    .toString(36)
-    .slice(2, 10)}_${safeName}`;
-
-  const storageRef = ref(storage, `${folder}/${uniqueName}`);
-
-  const snapshot = await uploadBytes(storageRef, file, {
-    contentType: file.type || "image/jpeg",
-  });
-
-  return await getDownloadURL(snapshot.ref);
-};
-
+import { isSupportedImage, uploadImage } from "../utils/firebaseStorage";
 import {
   addDoc,
   collection,
@@ -191,116 +161,9 @@ function AdminDashboard() {
 
   /*
   ============================================================
-  IMAGE HELPERS
+  CATEGORY IMAGE UPLOAD
   ============================================================
   */
-
-  const IMAGE_EXTENSIONS = [
-    ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp",
-    ".tif", ".tiff", ".svg", ".avif", ".ico", ".heic", ".heif",
-  ];
-
-  const isSupportedImage = (file) => {
-    if (!file) return false;
-
-    const typeIsImage = file.type?.toLowerCase().startsWith("image/");
-    const name = file.name?.toLowerCase() || "";
-    const extensionIsImage = IMAGE_EXTENSIONS.some((ext) => name.endsWith(ext));
-
-    return typeIsImage || extensionIsImage;
-  };
-
-  const compressImage = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) => {
-    return new Promise((resolve) => {
-      if (!file || !isSupportedImage(file)) {
-        resolve(null);
-        return;
-      }
-
-      // Keep formats that may contain vectors/animation or may not decode in canvas.
-      const type = file.type?.toLowerCase() || "";
-      const name = file.name?.toLowerCase() || "";
-      const keepOriginal =
-        type === "image/gif" ||
-        type === "image/svg+xml" ||
-        type === "image/heic" ||
-        type === "image/heif" ||
-        name.endsWith(".gif") ||
-        name.endsWith(".svg") ||
-        name.endsWith(".heic") ||
-        name.endsWith(".heif");
-
-      if (keepOriginal) {
-        resolve(file);
-        return;
-      }
-
-      const objectUrl = URL.createObjectURL(file);
-      const img = new Image();
-
-      img.onload = () => {
-        try {
-          let width = img.naturalWidth || img.width;
-          let height = img.naturalHeight || img.height;
-
-          if (!width || !height) {
-            URL.revokeObjectURL(objectUrl);
-            resolve(file);
-            return;
-          }
-
-          const scale = Math.min(1, maxWidth / width, maxHeight / height);
-          width = Math.max(1, Math.round(width * scale));
-          height = Math.max(1, Math.round(height * scale));
-
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext("2d", { alpha: true });
-          if (!ctx) {
-            URL.revokeObjectURL(objectUrl);
-            resolve(file);
-            return;
-          }
-
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob(
-            (blob) => {
-              URL.revokeObjectURL(objectUrl);
-
-              if (!blob) {
-                resolve(file);
-                return;
-              }
-
-              const compressedName = `${file.name.replace(/\.[^.]+$/, "")}.jpg`;
-              resolve(
-                new File([blob], compressedName, {
-                  type: "image/jpeg",
-                  lastModified: Date.now(),
-                })
-              );
-            },
-            "image/jpeg",
-            quality
-          );
-        } catch (error) {
-          console.warn("Image compression failed; original will be uploaded.", error);
-          URL.revokeObjectURL(objectUrl);
-          resolve(file);
-        }
-      };
-
-      img.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        resolve(file);
-      };
-
-      img.src = objectUrl;
-    });
-  };
 
   const prepareCategoryImage = async (file, setter, previewSetter) => {
     if (!file) return;
@@ -310,17 +173,11 @@ function AdminDashboard() {
       return;
     }
 
+    const previewUrl = URL.createObjectURL(file);
+    previewSetter(previewUrl);
+
     try {
-      const compressedFile = await compressImage(file);
-      if (!compressedFile) {
-        alert("Image prepare karne mein masla aaya hai.");
-        return;
-      }
-
-      const previewUrl = URL.createObjectURL(compressedFile);
-      previewSetter(previewUrl);
-
-      const uploadedUrl = await uploadImage(compressedFile);
+      const uploadedUrl = await uploadImage(file, "category-images");
 
       if (!uploadedUrl) {
         throw new Error("Image upload did not return a URL.");
@@ -329,9 +186,10 @@ function AdminDashboard() {
       setter(uploadedUrl);
     } catch (error) {
       console.error("Category image upload error:", error);
+      URL.revokeObjectURL(previewUrl);
       setter("");
       previewSetter("");
-      alert(`Category image upload failed: ${error?.message || "Unknown error"}`);
+      alert(error?.message || "Category image upload karte waqt masla aaya hai.");
     }
   };
 
@@ -1891,7 +1749,7 @@ function AdminDashboard() {
                           </label>
                           <input
                             type="file"
-                            accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.avif,.ico,.heic,.heif,.jfif,.pjpeg,.pjp"
+                            accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.avif,.ico,.heic,.heif"
                             onChange={handleCategoryImageChange}
                             className="w-full text-xs text-slate-600 file:mr-3 file:px-3 file:py-2 file:border-0 file:rounded-lg file:bg-slate-900 file:text-white file:text-[10px] file:font-bold file:cursor-pointer"
                           />
@@ -2025,7 +1883,7 @@ function AdminDashboard() {
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Change Image</label>
                             <input
                               type="file"
-                              accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.avif,.ico,.heic,.heif,.jfif,.pjpeg,.pjp"
+                              accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.avif,.ico,.heic,.heif"
                               onChange={handleEditCategoryImageChange}
                               className="w-full text-xs text-slate-600 file:mr-3 file:px-3 file:py-2 file:border-0 file:rounded-lg file:bg-slate-900 file:text-white file:text-[10px] file:font-bold file:cursor-pointer"
                             />

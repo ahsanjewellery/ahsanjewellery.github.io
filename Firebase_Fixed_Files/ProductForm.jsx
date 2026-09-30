@@ -1,38 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import { isSupportedImage, uploadImage } from "../utils/firebaseStorage";
 import { db } from "../firebase";
-
-// Firebase Storage image uploader.
-// Firestore stores only the returned URL; the actual image stays in Storage.
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
-
-// Agar aapka storage bucket URL alag hai, toh aap yahan explicitly pass kar sakte hain:
-// jaise: const storage = getStorage(db.app, "gs://ahsan-a0a0c.firebasestorage.app");
-const storage = getStorage();
-
-const uploadImage = async (file, folder = "images") => {
-  if (!file) throw new Error("No image file selected.");
-
-  const safeName = String(file.name || "image.jpg")
-    .replace(/[^a-zA-Z0-9._-]/g, "_");
-
-  const uniqueName = `${Date.now()}_${Math.random()
-    .toString(36)
-    .slice(2, 10)}_${safeName}`;
-
-  const storageRef = ref(storage, `${folder}/${uniqueName}`);
-
-  const snapshot = await uploadBytes(storageRef, file, {
-    contentType: file.type || "image/jpeg",
-  });
-
-  return await getDownloadURL(snapshot.ref);
-};
-
 import {
   collection,
   addDoc,
@@ -42,113 +10,7 @@ import {
   doc,
 } from "firebase/firestore";
 
-// Image Compressor + validation helper
-const IMAGE_EXTENSIONS = [
-  ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp",
-  ".tif", ".tiff", ".svg", ".avif", ".ico", ".heic", ".heif",
-];
-
-const isSupportedImage = (file) => {
-  if (!file) return false;
-
-  const typeIsImage = file.type?.toLowerCase().startsWith("image/");
-  const name = file.name?.toLowerCase() || "";
-  const extensionIsImage = IMAGE_EXTENSIONS.some((ext) => name.endsWith(ext));
-
-  return typeIsImage || extensionIsImage;
-};
-
-const compressImage = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) => {
-  return new Promise((resolve, reject) => {
-    if (!file || !isSupportedImage(file)) {
-      reject(new Error("Please select a valid image file."));
-      return;
-    }
-
-    const type = file.type?.toLowerCase() || "";
-    const name = file.name?.toLowerCase() || "";
-
-    const keepOriginal =
-      type === "image/gif" ||
-      type === "image/svg+xml" ||
-      type === "image/heic" ||
-      type === "image/heif" ||
-      name.endsWith(".gif") ||
-      name.endsWith(".svg") ||
-      name.endsWith(".heic") ||
-      name.endsWith(".heif");
-
-    if (keepOriginal) {
-      resolve(file);
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
-
-    img.onload = () => {
-      try {
-        let width = img.naturalWidth || img.width;
-        let height = img.naturalHeight || img.height;
-
-        if (!width || !height) {
-          URL.revokeObjectURL(objectUrl);
-          resolve(file);
-          return;
-        }
-
-        const scale = Math.min(1, maxWidth / width, maxHeight / height);
-        width = Math.max(1, Math.round(width * scale));
-        height = Math.max(1, Math.round(height * scale));
-
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext("2d", { alpha: true });
-        if (!ctx) {
-          URL.revokeObjectURL(objectUrl);
-          resolve(file);
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob(
-          (blob) => {
-            URL.revokeObjectURL(objectUrl);
-
-            if (!blob) {
-              resolve(file);
-              return;
-            }
-
-            const compressedName = `${file.name.replace(/\.[^.]+$/, "")}.jpg`;
-            resolve(
-              new File([blob], compressedName, {
-                type: "image/jpeg",
-                lastModified: Date.now(),
-              })
-            );
-          },
-          "image/jpeg",
-          quality
-        );
-      } catch (error) {
-        console.warn("Image compression failed; original will be uploaded.", error);
-        URL.revokeObjectURL(objectUrl);
-        resolve(file);
-      }
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      resolve(file);
-    };
-
-    img.src = objectUrl;
-  });
-};
+// Image validation and Firebase Storage upload are handled in ../utils/firebaseStorage
 
 function ProductForm() {
   const [loading, setLoading] = useState(false);
@@ -288,15 +150,13 @@ function ProductForm() {
     setImageLoading(true);
     try {
       if (!isSupportedImage(file)) {
-        alert("Please select a valid image file.");
-        return;
+        throw new Error("Please select a valid image file.");
       }
-      const compressedFile = await compressImage(file, 1200, 1200, 0.82);
-      const url = await uploadImage(compressedFile);
+      const url = await uploadImage(file, "product-images");
       if (url) setImageUrl(url);
     } catch (error) {
       console.error("Failed to upload image:", error);
-      alert(`Image upload failed: ${error?.message || "Unknown error"}`);
+      alert("Image upload mein error aaya hai.");
     } finally {
       setImageLoading(false);
     }
@@ -309,18 +169,16 @@ function ProductForm() {
     setCategoryImageLoading(true);
     try {
       if (!isSupportedImage(file)) {
-        alert("Please select a valid image file.");
-        return;
+        throw new Error("Please select a valid image file.");
       }
-      const compressedFile = await compressImage(file, 1200, 1200, 0.82);
-      const url = await uploadImage(compressedFile);
+      const url = await uploadImage(file, "category-images");
       if (url) {
         setCategoryImage(url);
-        setCategoryImagePreview(URL.createObjectURL(compressedFile));
+        setCategoryImagePreview(URL.createObjectURL(file));
       }
     } catch (error) {
       console.error("Failed to upload category image:", error);
-      alert(`Category image upload failed: ${error?.message || "Unknown error"}`);
+      alert("Category image upload karne mein masla aaya hai.");
     } finally {
       setCategoryImageLoading(false);
     }
@@ -466,7 +324,7 @@ function ProductForm() {
             <input
               ref={categoryFileInputRef}
               type="file"
-              accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.avif,.ico,.heic,.heif,.jfif,.pjpeg,.pjp"
+              accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.avif,.ico,.heic,.heif"
               onChange={handleCategoryImage}
               className="text-xs"
             />
@@ -498,7 +356,7 @@ function ProductForm() {
         <h2 className="text-lg font-bold mb-4">{editingId ? "Edit Product" : "Add Product"}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center gap-4">
-            <input ref={fileInputRef} type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.avif,.ico,.heic,.heif,.jfif,.pjpeg,.pjp" onChange={handleImage} className="text-xs" />
+            <input ref={fileInputRef} type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.avif,.ico,.heic,.heif" onChange={handleImage} className="text-xs" />
             {imageLoading && <span className="text-xs text-blue-600">Compressing & Uploading Main Image...</span>}
             {imageUrl && <img src={imageUrl} alt="preview" className="w-12 h-12 object-cover rounded border" />}
           </div>
