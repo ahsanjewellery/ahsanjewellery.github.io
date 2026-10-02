@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://operaofficialpk.github.io/sitemap.xml
+Sitemap: https://ahsanjewellery.github.io/sitemap.xml
