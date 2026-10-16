@@ -1,12 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import logoImage from "../assets/logo.png";
+import { jewelleryCategories } from "../data/categories";
+import { StoreContext } from "../context/StoreContext";
+import AnnouncementBar from './AnnouncementBar';
 
 export default function Navbar({ cartCount = 0 }) {
-  const [jewelleryOpen, setJewelleryOpen] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+
+  // Wishlist aur categories StoreContext se fetch karna
+  const { wishlist, categories } = useContext(StoreContext) || { wishlist: [], categories: [] };
+  const wishlistCount = Array.isArray(wishlist) ? wishlist.length : 0;
+
+  // Agar StoreContext mein categories available hain toh wo use karein, warna fallback ke taur par static categories
+  const displayCategories = categories && categories.length > 0 
+    ? categories 
+    : (jewelleryCategories?.collections || []);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -24,645 +37,204 @@ export default function Navbar({ cartCount = 0 }) {
 
   return (
     <>
-      <style>{`
-        :root {
-          --pink: #e90d8b;
-          --pink-dark: #c90876;
-          --charcoal: #2b2b2b;
-        }
+      <AnnouncementBar />
 
-        .top-bar {
-          width: 100%;
-          height: 39px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #2b2b2b;
-          color: #fff;
-        }
-
-        .top-bar p {
-          margin: 0;
-          font-size: 13px;
-          font-weight: 500;
-          letter-spacing: 0.3px;
-        }
-
-        .navbar {
-          width: 100%;
-          background: #fff;
-          position: sticky;
-          top: 0;
-          z-index: 1000;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .navbar-main {
-          position: relative;
-          width: 100%;
-          height: 110px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 6%;
-          box-sizing: border-box;
-        }
-
-        .navbar-left {
-          width: 220px;
-          display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          gap: 12px;
-        }
-
-        .menu-button {
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          padding: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #222;
-          transition: color 0.25s ease, transform 0.25s ease;
-        }
-
-        .menu-button:hover {
-          color: var(--pink);
-          transform: translateY(-2px);
-        }
-
-        /* CENTER LOGO - ENLARGED & CLEAN (NO PINK HOVER) */
-        .navbar-logo {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          text-decoration: none;
-          z-index: 5;
-        }
-
-        .navbar-logo img {
-          width: 240px;
-          height: auto;
-          max-height: 95px;
-          object-fit: contain;
-          display: block;
-        }
-
-        .navbar-right {
-          width: 220px;
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 20px;
-        }
-
-        .nav-icon {
-          width: 30px;
-          height: 30px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #222;
-          text-decoration: none;
-          border: none;
-          background: transparent;
-          padding: 0;
-          cursor: pointer;
-          transition: color 0.25s ease, transform 0.25s ease;
-        }
-
-        .nav-icon svg {
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 1.6;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-        }
-
-        .nav-icon:hover {
-          color: var(--pink);
-          transform: translateY(-2px);
-        }
-
-        .search-button {
-          width: 34px;
-          height: 34px;
-        }
-
-        .search-button svg {
-          width: 25px;
-          height: 25px;
-          stroke-width: 1.7;
-        }
-
-        .cart-link {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          color: #222;
-          text-decoration: none;
-          font-size: 13px;
-          font-weight: 500;
-          transition: color 0.25s ease, transform 0.25s ease;
-        }
-
-        .cart-link svg {
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 1.6;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-        }
-
-        .cart-link:hover {
-          color: var(--pink);
-          transform: translateY(-2px);
-        }
-
-        .cart-link b {
-          min-width: 18px;
-          height: 18px;
-          padding: 0 4px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          background: var(--pink);
-          color: #fff;
-          font-size: 10px;
-          font-weight: 700;
-        }
-
-        .navbar-menu {
-          width: 100%;
-          height: 50px;
-          background: var(--pink);
-          display: flex;
-          align-items: center;
-        }
-
-        .navbar-menu-inner {
-          width: 100%;
-          height: 50px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .nav-link {
-          height: 50px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0 22px;
-          color: #fff;
-          text-decoration: none;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.8px;
-          text-transform: uppercase;
-          border: none;
-          background: transparent;
-          transition: background 0.25s ease, color 0.25s ease;
-        }
-
-        .nav-link:hover {
-          background: var(--pink-dark);
-          color: #fff;
-        }
-
-        .nav-dropdown {
-          position: relative;
-        }
-
-        .nav-dropdown-button {
-          font-family: inherit;
-          cursor: pointer;
-        }
-
-        .dropdown-arrow {
-          margin-left: 8px;
-          font-size: 14px;
-          line-height: 1;
-        }
-
-        .dropdown-menu {
-          position: absolute;
-          top: 50px;
-          left: 0;
-          min-width: 215px;
-          padding: 8px 0;
-          background: #fff;
-          border: 1px solid #eee;
-          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.14);
-          z-index: 1010;
-        }
-
-        .dropdown-menu a {
-          display: block;
-          padding: 12px 20px;
-          color: #2b2b2b;
-          text-decoration: none;
-          font-size: 13px;
-          transition: background 0.2s ease, color 0.2s ease, padding-left 0.2s ease;
-        }
-
-        .dropdown-menu a:hover {
-          background: #fff0f8;
-          color: var(--pink);
-          padding-left: 25px;
-        }
-
-        .nav-sale {
-          font-weight: 800;
-        }
-
-        .menu-overlay-backdrop {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.6);
-          z-index: 2000;
-          display: flex;
-          justify-content: flex-start;
-          animation: fadeIn 0.3s ease;
-        }
-
-        .menu-sidebar-drawer {
-          width: 100%;
-          max-width: 440px;
-          height: 100%;
-          background: #ffffff;
-          padding: 30px 35px;
-          box-sizing: border-box;
-          overflow-y: auto;
-          box-shadow: 5px 0 30px rgba(0, 0, 0, 0.15);
-          display: flex;
-          flex-direction: column;
-          animation: slideInLeft 0.3s ease;
-        }
-
-        @keyframes slideInLeft {
-          from { transform: translateX(-100%); }
-          to { transform: translateX(0); }
-        }
-
-        .menu-sidebar-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding-bottom: 22px;
-        }
-
-        .menu-sidebar-brand {
-          font-family: inherit;
-          font-size: 20px;
-          font-weight: 700;
-          letter-spacing: 2px;
-          color: #111;
-        }
-
-        .menu-close-btn {
-          background: transparent;
-          border: none;
-          font-size: 22px;
-          cursor: pointer;
-          color: #111;
-          padding: 0;
-          line-height: 1;
-          transition: color 0.2s ease;
-        }
-
-        .menu-close-btn:hover {
-          color: var(--pink);
-        }
-
-        .menu-links-list {
-          display: flex;
-          flex-direction: column;
-          padding: 15px 0 20px 0;
-        }
-
-        .menu-links-list a {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 15px 0;
-          color: #1a1a1a;
-          text-decoration: none;
-          font-size: 13px;
-          font-weight: 500;
-          letter-spacing: 0.8px;
-          border-bottom: 1px solid #f2f2f2;
-          transition: color 0.2s ease;
-        }
-
-        .menu-links-list a:hover {
-          color: var(--pink);
-        }
-
-        .search-overlay-modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.5);
-          z-index: 2000;
-          display: flex;
-          justify-content: flex-end;
-          animation: fadeIn 0.3s ease;
-        }
-
-        .search-overlay-content {
-          width: 100%;
-          max-width: 480px;
-          height: 100%;
-          background: #ffffff;
-          padding: 35px 30px;
-          box-sizing: border-box;
-          overflow-y: auto;
-          box-shadow: -5px 0 25px rgba(0, 0, 0, 0.15);
-          display: flex;
-          flex-direction: column;
-          animation: slideInRight 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes slideInRight {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
-
-        .search-overlay-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 25px;
-        }
-
-        .search-overlay-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: #111;
-          letter-spacing: 0.5px;
-          margin: 0;
-        }
-
-        .search-close-btn {
-          background: transparent;
-          border: none;
-          font-size: 20px;
-          cursor: pointer;
-          color: #111;
-          padding: 5px;
-        }
-
-        .search-overlay-input-wrapper {
-          position: relative;
-          display: flex;
-          align-items: center;
-          border: 1px solid #dcdcdc;
-          border-radius: 4px;
-          padding: 0 16px;
-          background: #fff;
-          height: 50px;
-          margin-bottom: 30px;
-        }
-
-        .search-overlay-input {
-          width: 100%;
-          border: none;
-          outline: none;
-          font-size: 14px;
-          color: #333;
-          background: transparent;
-        }
-
-        .suggestions-heading {
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.8px;
-          color: #111;
-          margin-bottom: 18px;
-        }
-
-        .suggestions-list {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-        }
-
-        .suggestions-list li {
-          font-size: 13px;
-          font-weight: 500;
-          color: #444;
-          padding: 14px 0;
-          border-bottom: 1px solid #f0f0f0;
-          cursor: pointer;
-          transition: color 0.2s ease;
-        }
-
-        .suggestions-list li:hover {
-          color: var(--pink);
-        }
-
-        @media (max-width: 900px) {
-          .navbar-main { padding: 0 3%; height: 95px; }
-          .navbar-left, .navbar-right { width: 180px; }
-          .navbar-logo img { width: 180px; }
-          .navbar-right { gap: 14px; }
-          .nav-link { padding: 0 14px; font-size: 11px; }
-        }
-
-        @media (max-width: 650px) {
-          .top-bar { height: 32px; }
-          .top-bar p { font-size: 10px; }
-          .navbar-main { height: 85px; padding: 0 18px; }
-          .navbar-left, .navbar-right { width: auto; }
-          .navbar-logo img { width: 150px; }
-          .navbar-right { gap: 10px; }
-          .cart-link span { display: none; }
-          .navbar-menu { height: 46px; }
-          .navbar-menu-inner { height: 46px; overflow-x: auto; justify-content: flex-start; scrollbar-width: none; }
-          .navbar-menu-inner::-webkit-scrollbar { display: none; }
-          .nav-link { height: 46px; flex-shrink: 0; padding: 0 13px; font-size: 10px; }
-          .menu-sidebar-drawer { max-width: 90%; padding: 25px 20px; }
-          .search-overlay-content { max-width: 100%; padding: 25px 20px; }
-        }
-      `}</style>
-
-      {/* Top Shipping Bar */}
-      <div className="top-bar">
-        <p>✈ Shipping across Pakistan &amp; worldwide</p>
-      </div>
-
-      <header className="navbar">
-        <div className="navbar-main">
-          {/* LEFT - HAMBURGER & SEARCH */}
-          <div className="navbar-left">
+      <header className="w-full bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-neutral-100 transition-all shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+          
+          {/* LEFT: Menu & Search Icons */}
+          <div className="flex items-center gap-3 sm:gap-6 w-1/4">
             <button 
-              className="nav-icon menu-button" 
+              className="text-neutral-800 hover:text-[#E82A89] transition-colors p-1 cursor-pointer" 
               type="button" 
               aria-label="Menu"
               onClick={() => setIsMenuOpen(true)}
             >
-              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                <line x1="3" y1="6" x2="21" y2="6" />
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+                <line x1="3" y1="7" x2="21" y2="7" />
                 <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="17" x2="21" y2="17" />
               </svg>
             </button>
 
             <button 
-              className="nav-icon search-button" 
+              className="text-neutral-800 hover:text-[#E82A89] transition-colors p-1 cursor-pointer" 
               type="button" 
               aria-label="Search"
               onClick={() => setIsSearchOpen(true)}
             >
-              <svg viewBox="0 0 24 24" width="24" height="24">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7">
                 <circle cx="11" cy="11" r="7" />
-                <path d="M20 20l-4-4" />
+                <path d="M20 20l-4-4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
           </div>
 
-          {/* CENTER - LOGO */}
-          <Link to="/" className="navbar-logo">
-            <img src="/logo.png" alt="Ahsan Jewellery" />
-          </Link>
+          {/* CENTER: Brand Logo */}
+          <div className="flex justify-center w-2/4">
+            <Link to="/" className="flex items-center justify-center">
+              <img src={logoImage} alt="Ahsan Jewellery" className="h-11 sm:h-14 w-auto object-contain transition-transform duration-300 hover:scale-105" />
+            </Link>
+          </div>
 
-          {/* RIGHT */}
-          <div className="navbar-right">
-            <Link to="/account" className="nav-icon" aria-label="Account">
-              <svg viewBox="0 0 24 24" width="23" height="23">
+          {/* RIGHT: User Actions (Account, Wishlist, Cart) */}
+          <div className="flex items-center justify-end gap-3 sm:gap-6 w-1/4">
+            <Link to="/account" className="text-neutral-800 hover:text-[#E82A89] transition-colors flex items-center p-1" aria-label="Account">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 21c.8-4 3.5-6 8-6s7.2 2 8 6" />
               </svg>
             </Link>
 
-            <Link to="/wishlist" className="nav-icon" aria-label="Wishlist">
-              <svg viewBox="0 0 24 24" width="24" height="24">
+            {/* Wishlist Icon with Count Badge */}
+            <Link to="/wishlist" className="text-neutral-800 hover:text-[#E82A89] transition-colors relative flex items-center p-1" aria-label="Wishlist">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20.8 8.7c0 5.5-8.8 10.3-8.8 10.3S3.2 14.2 3.2 8.7A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.5Z" />
               </svg>
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#E82A89] text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
 
-            <Link to="/cart" className="cart-link" aria-label="Cart">
-              <svg viewBox="0 0 24 24" width="23" height="23">
-                <path d="M6 8h12l1 13H5L6 8Z" />
-                <path d="M9 8a3 3 0 0 1 6 0" />
-              </svg>
-              <span>Cart</span>
-              <b>{cartCount}</b>
+            {/* Cart / Bag Icon */}
+            <Link to="/cart" className="flex items-center gap-1.5 text-neutral-800 hover:text-[#E82A89] transition-colors font-medium text-sm p-1" aria-label="Cart">
+              <div className="relative">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 8h12l1 13H5L6 8Z" />
+                  <path d="M9 8a3 3 0 0 1 6 0" />
+                </svg>
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#E82A89] text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+                    {cartCount}
+                  </span>
+                )}
+              </div>
+              <span className="hidden md:inline font-semibold text-xs tracking-wider uppercase">Bag</span>
             </Link>
           </div>
         </div>
 
-        {/* PINK NAVIGATION */}
-        <nav className="navbar-menu">
-          <div className="navbar-menu-inner">
-            <Link to="/" className="nav-link">Home</Link>
-
-            <div
-              className="nav-dropdown"
-              onMouseEnter={() => setJewelleryOpen(true)}
-              onMouseLeave={() => setJewelleryOpen(false)}
+        {/* MINIMALIST SECONDARY NAVIGATION BAR (Desktop Only) */}
+        <nav className="w-full border-t border-neutral-100 bg-white hidden md:block">
+          <div className="max-w-7xl mx-auto flex items-center justify-center gap-10 h-12 text-xs font-semibold uppercase tracking-[0.2em]">
+            <Link to="/shop" className="text-neutral-700 hover:text-[#E82A89] transition-colors py-2">All Products</Link>
+            <Link to="/shop?category=new-arrivals" className="text-neutral-700 hover:text-[#E82A89] transition-colors py-2">New Arrivals</Link>
+            
+            {/* Elegant Dropdown for Collections (Dynamic Categories) */}
+            <div 
+              className="relative h-full flex items-center"
+              onMouseEnter={() => setCollectionOpen(true)}
+              onMouseLeave={() => setCollectionOpen(false)}
             >
-              <button type="button" className="nav-link nav-dropdown-button">
-                Jewellery
-                <span className="dropdown-arrow">⌄</span>
+              <button type="button" className="flex items-center gap-1 text-neutral-700 hover:text-[#E82A89] transition-colors bg-transparent border-none cursor-pointer font-inherit text-xs font-semibold uppercase tracking-[0.2em] py-2">
+                Collections <span className={`text-[9px] transition-transform duration-200 ${collectionOpen ? "rotate-180" : ""}`}>▼</span>
               </button>
 
-              {jewelleryOpen && (
-                <div className="dropdown-menu">
-                  <Link to="/shop">All Jewellery</Link>
-                  <Link to="/shop?category=rings">Rings</Link>
-                  <Link to="/shop?category=necklaces">Necklaces</Link>
-                  <Link to="/shop?category=earrings">Earrings</Link>
-                  <Link to="/shop?category=bracelets">Bracelets</Link>
-                  <Link to="/shop?category=sets">Jewellery Sets</Link>
+              {collectionOpen && (
+                <div className="absolute top-12 left-1/2 -translate-x-1/2 w-64 py-3 bg-white border border-neutral-100 shadow-2xl rounded-2xl z-50 max-h-80 overflow-y-auto animate-in fade-in duration-200">
+                  {displayCategories.map((item, idx) => (
+                    <Link 
+                      key={idx} 
+                      to={item.path || `/shop?category=${encodeURIComponent(item.name ? item.name.toLowerCase() : item)}`} 
+                      className="block px-5 py-2.5 text-neutral-600 hover:text-[#E82A89] hover:bg-neutral-50 text-xs font-medium capitalize transition-colors"
+                      onClick={() => setCollectionOpen(false)}
+                    >
+                      {item.name || item}
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>
 
-            <Link to="/shop?category=new-arrivals" className="nav-link">New Arrivals</Link>
-            <Link to="/shop?category=collections" className="nav-link">Collections</Link>
-            <Link to="/about" className="nav-link">About Us</Link>
-            <Link to="/contact" className="nav-link">Contact</Link>
-            <Link to="/shop?category=sale" className="nav-link nav-sale">Sale</Link>
+            {/* BLINKING SALE BUTTON */}
+            <Link 
+              to="/shop?category=sale" 
+              className="text-[#E82A89] font-bold px-3.5 py-1 rounded-full bg-[#E82A89]/10 animate-pulse border border-[#E82A89]/30 hover:bg-[#E82A89]/20 transition-all tracking-[0.15em]"
+            >
+              🔥 Sale
+            </Link>
           </div>
         </nav>
       </header>
 
-      {/* LEFT SIDEBAR MENU DRAWER */}
+      {/* MOBILE SIDEBAR MENU DRAWER */}
       {isMenuOpen && (
-        <div className="menu-overlay-backdrop" onClick={() => setIsMenuOpen(false)}>
-          <div className="menu-sidebar-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="menu-sidebar-header">
-              <span className="menu-sidebar-brand">AHSAN JEWELLERY</span>
-              <button className="menu-close-btn" onClick={() => setIsMenuOpen(false)} type="button">✕</button>
+        <div className="fixed inset-0 bg-black/50 z-50 flex justify-start backdrop-blur-sm animate-fadeIn" onClick={() => setIsMenuOpen(false)}>
+          <div className="w-80 h-full bg-white p-6 sm:p-8 shadow-2xl flex flex-col justify-between overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div>
+              <div className="flex items-center justify-between pb-6 border-b border-neutral-100">
+                <span className="font-serif font-bold text-sm tracking-[0.2em] text-neutral-900">AHSAN JEWELLERY</span>
+                <button className="text-neutral-500 hover:text-neutral-900 text-xl font-light cursor-pointer" onClick={() => setIsMenuOpen(false)} type="button">✕</button>
+              </div>
+
+              <div className="flex flex-col gap-4 pt-6 text-xs font-semibold uppercase tracking-[0.15em]">
+                <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-neutral-800 hover:text-[#E82A89] transition-colors py-1">All Products</Link>
+                <Link to="/shop?category=new-arrivals" onClick={() => setIsMenuOpen(false)} className="text-neutral-800 hover:text-[#E82A89] transition-colors py-1">New Arrivals</Link>
+                
+                {/* Dynamic Categories inside Mobile Drawer */}
+                {displayCategories.map((item, idx) => (
+                  <Link 
+                    key={idx} 
+                    to={item.path || `/shop?category=${encodeURIComponent(item.name ? item.name.toLowerCase() : item)}`} 
+                    onClick={() => setIsMenuOpen(false)} 
+                    className="text-neutral-800 hover:text-[#E82A89] transition-colors capitalize py-1"
+                  >
+                    {item.name || item}
+                  </Link>
+                ))}
+
+                <Link to="/shop?category=sale" onClick={() => setIsMenuOpen(false)} className="text-[#E82A89] font-bold animate-pulse py-1">🔥 Sale</Link>
+              </div>
             </div>
 
-            <div className="menu-links-list">
-              <Link to="/shop?category=new-arrivals" onClick={() => setIsMenuOpen(false)}>NEW ARRIVALS</Link>
-              <Link to="/shop?category=bridal-sets" onClick={() => setIsMenuOpen(false)}>BRIDAL SETS</Link>
-              <Link to="/shop?category=necklaces" onClick={() => setIsMenuOpen(false)}>NECKLACES &amp; PENDANTS</Link>
-              <Link to="/shop?category=rings" onClick={() => setIsMenuOpen(false)}>RINGS &amp; BANDS</Link>
-              <Link to="/shop?category=earrings" onClick={() => setIsMenuOpen(false)}>EARRINGS &amp; JHUMKAS</Link>
-              <Link to="/shop?category=bangles-bracelets" onClick={() => setIsMenuOpen(false)}>BANGLES &amp; BRACELETS</Link>
-              <Link to="/shop?category=polki-kundan" onClick={() => setIsMenuOpen(false)}>POLKI &amp; KUNDAN</Link>
+            <div className="pt-6 border-t border-neutral-100 text-[10px] text-neutral-400 text-center tracking-widest uppercase">
+              Ahsan Jewellery Official Store
             </div>
           </div>
         </div>
       )}
 
-      {/* SEARCH SIDEBAR DRAWER MODAL */}
+      {/* SEARCH OVERLAY DRAWER */}
       {isSearchOpen && (
-        <div className="search-overlay-modal" onClick={() => setIsSearchOpen(false)}>
-          <div className="search-overlay-content" onClick={(e) => e.stopPropagation()}>
-            <div className="search-overlay-header">
-              <h2 className="search-overlay-title">SEARCH YOUR FAVOURITE</h2>
-              <button className="search-close-btn" onClick={() => setIsSearchOpen(false)} type="button">✕</button>
+        <div className="fixed inset-0 bg-black/50 z-50 flex justify-end backdrop-blur-sm animate-fadeIn" onClick={() => setIsSearchOpen(false)}>
+          <div className="w-full max-w-lg h-full bg-white p-6 sm:p-8 shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">Search Catalogue</h2>
+              <button className="text-neutral-500 hover:text-neutral-900 text-xl font-light cursor-pointer" onClick={() => setIsSearchOpen(false)} type="button">✕</button>
             </div>
 
-            <form onSubmit={handleSearchSubmit} className="search-overlay-input-wrapper">
+            <form onSubmit={handleSearchSubmit} className="relative flex items-center border-b-2 border-neutral-900 pb-2 mb-8">
               <input 
                 type="text"
-                placeholder="Search jewellery..."
+                placeholder="Search rings, bridal sets, gold polish..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
-                className="search-overlay-input"
+                className="w-full border-none outline-none text-sm text-neutral-900 bg-transparent placeholder:text-neutral-400 tracking-wide"
               />
-              <button type="submit" style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+              <button type="submit" className="text-neutral-900 hover:text-[#E82A89] transition-colors cursor-pointer">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="7" />
                   <path d="M20 20l-4-4" />
                 </svg>
               </button>
             </form>
 
-            <div className="search-suggestions-section">
-              <h3 className="suggestions-heading">SUGGESTIONS FOR YOU</h3>
-              <ul className="suggestions-list">
-                <li onClick={() => handleSuggestionClick("BRIDAL SETS")}>BRIDAL SETS</li>
-                <li onClick={() => handleSuggestionClick("NECKLACES")}>NECKLACES</li>
-                <li onClick={() => handleSuggestionClick("RINGS")}>RINGS</li>
-                <li onClick={() => handleSuggestionClick("EARRINGS")}>EARRINGS</li>
-                <li onClick={() => handleSuggestionClick("BANGLES")}>BANGLES</li>
-              </ul>
+            <div>
+              <h3 className="text-xs font-bold tracking-[0.2em] text-neutral-400 uppercase mb-4">Popular Searches</h3>
+              <div className="flex flex-wrap gap-2">
+                {["Bridal Sets", "Necklaces", "Rings", "Earrings", "Bangles"].map((term) => (
+                  <button
+                    key={term}
+                    onClick={() => handleSuggestionClick(term)}
+                    className="px-4 py-2 rounded-full border border-neutral-200 text-xs font-medium text-neutral-700 hover:border-[#E82A89] hover:text-[#E82A89] transition-all bg-neutral-50/50 cursor-pointer"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

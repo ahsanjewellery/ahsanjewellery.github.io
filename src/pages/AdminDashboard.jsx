@@ -4,48 +4,10 @@ import ManageOrders from "../components/ManageOrders";
 import ManageReviews from "../components/ManageReviews";
 import ContactMessages from "../components/ContactMessages";
 import { db } from "../firebase";
-
-// Firebase Storage image uploader.
-// Firestore stores only the returned URL; the actual image stays in Storage.
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
-
-const storage = getStorage();
-
-const uploadImage = async (file, folder = "images") => {
-  if (!file) throw new Error("No image file selected.");
-
-  const safeName = String(file.name || "image.jpg")
-    .replace(/[^a-zA-Z0-9._-]/g, "_");
-
-  const uniqueName = `${Date.now()}_${Math.random()
-    .toString(36)
-    .slice(2, 10)}_${safeName}`;
-
-  const storageRef = ref(storage, `${folder}/${uniqueName}`);
-
-  const snapshot = await uploadBytes(storageRef, file, {
-    contentType: file.type || "image/jpeg",
-  });
-
-  return await getDownloadURL(snapshot.ref);
-};
-
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  updateDoc,
-} from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   const [productsOpen, setProductsOpen] = useState(false);
   const [pagesOpen, setPagesOpen] = useState(false);
@@ -62,20 +24,6 @@ function AdminDashboard() {
   const [selectedMedia, setSelectedMedia] = useState(null);
 
   const [dashboardLoading, setDashboardLoading] = useState(false);
-
-  // CATEGORY MANAGEMENT
-  const [categoryName, setCategoryName] = useState("");
-  const [categoryImage, setCategoryImage] = useState("");
-  const [categoryImagePreview, setCategoryImagePreview] = useState("");
-  const [categorySaving, setCategorySaving] = useState(false);
-  const [categoryError, setCategoryError] = useState("");
-
-  const [editingCategory, setEditingCategory] = useState(null);
-  const [editCategoryName, setEditCategoryName] = useState("");
-  const [editCategoryImage, setEditCategoryImage] = useState("");
-  const [editCategoryImagePreview, setEditCategoryImagePreview] = useState("");
-  const [categoryUpdating, setCategoryUpdating] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
 
   /*
   ============================================================
@@ -184,351 +132,6 @@ function AdminDashboard() {
   };
 
   /*
-  ============================================================
-  CATEGORY IMAGE HELPERS
-  ============================================================
-  */
-
-  /*
-  ============================================================
-  IMAGE HELPERS
-  ============================================================
-  */
-
-  const IMAGE_EXTENSIONS = [
-    ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp",
-    ".tif", ".tiff", ".svg", ".avif", ".ico", ".heic", ".heif",
-  ];
-
-  const isSupportedImage = (file) => {
-    if (!file) return false;
-
-    const typeIsImage = file.type?.toLowerCase().startsWith("image/");
-    const name = file.name?.toLowerCase() || "";
-    const extensionIsImage = IMAGE_EXTENSIONS.some((ext) => name.endsWith(ext));
-
-    return typeIsImage || extensionIsImage;
-  };
-
-  const compressImage = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) => {
-    return new Promise((resolve) => {
-      if (!file || !isSupportedImage(file)) {
-        resolve(null);
-        return;
-      }
-
-      // Keep formats that may contain vectors/animation or may not decode in canvas.
-      const type = file.type?.toLowerCase() || "";
-      const name = file.name?.toLowerCase() || "";
-      const keepOriginal =
-        type === "image/gif" ||
-        type === "image/svg+xml" ||
-        type === "image/heic" ||
-        type === "image/heif" ||
-        name.endsWith(".gif") ||
-        name.endsWith(".svg") ||
-        name.endsWith(".heic") ||
-        name.endsWith(".heif");
-
-      if (keepOriginal) {
-        resolve(file);
-        return;
-      }
-
-      const objectUrl = URL.createObjectURL(file);
-      const img = new Image();
-
-      img.onload = () => {
-        try {
-          let width = img.naturalWidth || img.width;
-          let height = img.naturalHeight || img.height;
-
-          if (!width || !height) {
-            URL.revokeObjectURL(objectUrl);
-            resolve(file);
-            return;
-          }
-
-          const scale = Math.min(1, maxWidth / width, maxHeight / height);
-          width = Math.max(1, Math.round(width * scale));
-          height = Math.max(1, Math.round(height * scale));
-
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext("2d", { alpha: true });
-          if (!ctx) {
-            URL.revokeObjectURL(objectUrl);
-            resolve(file);
-            return;
-          }
-
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob(
-            (blob) => {
-              URL.revokeObjectURL(objectUrl);
-
-              if (!blob) {
-                resolve(file);
-                return;
-              }
-
-              const compressedName = `${file.name.replace(/\.[^.]+$/, "")}.jpg`;
-              resolve(
-                new File([blob], compressedName, {
-                  type: "image/jpeg",
-                  lastModified: Date.now(),
-                })
-              );
-            },
-            "image/jpeg",
-            quality
-          );
-        } catch (error) {
-          console.warn("Image compression failed; original will be uploaded.", error);
-          URL.revokeObjectURL(objectUrl);
-          resolve(file);
-        }
-      };
-
-      img.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        resolve(file);
-      };
-
-      img.src = objectUrl;
-    });
-  };
-
-  const prepareCategoryImage = async (file, setter, previewSetter) => {
-    if (!file) return;
-
-    if (!isSupportedImage(file)) {
-      alert("Please select a valid image file.");
-      return;
-    }
-
-    try {
-      const compressedFile = await compressImage(file);
-      if (!compressedFile) {
-        alert("Image prepare karne mein masla aaya hai.");
-        return;
-      }
-
-      const previewUrl = URL.createObjectURL(compressedFile);
-      previewSetter(previewUrl);
-
-      const uploadedUrl = await uploadImage(compressedFile);
-
-      if (!uploadedUrl) {
-        throw new Error("Image upload did not return a URL.");
-      }
-
-      setter(uploadedUrl);
-    } catch (error) {
-      console.error("Category image upload error:", error);
-      setter("");
-      previewSetter("");
-      alert(`Category image upload failed: ${error?.message || "Unknown error"}`);
-    }
-  };
-
-  const handleCategoryImageChange = async (e) => {
-    await prepareCategoryImage(
-      e.target.files?.[0],
-      setCategoryImage,
-      setCategoryImagePreview
-    );
-    e.target.value = "";
-  };
-
-  const handleEditCategoryImageChange = async (e) => {
-    await prepareCategoryImage(
-      e.target.files?.[0],
-      setEditCategoryImage,
-      setEditCategoryImagePreview
-    );
-    e.target.value = "";
-  };
-
-  const resetCategoryForm = () => {
-    setCategoryName("");
-    setCategoryImage("");
-    setCategoryImagePreview("");
-    setCategoryError("");
-  };
-
-  const handleAddCategory = async (e) => {
-    e.preventDefault();
-    const name = categoryName.trim();
-
-    if (!name) {
-      setCategoryError("Category name is required.");
-      return;
-    }
-
-    if (!categoryImage) {
-      setCategoryError("Category image upload karein.");
-      return;
-    }
-
-    setCategorySaving(true);
-    setCategoryError("");
-
-    try {
-      await addDoc(collection(db, "categories"), {
-        name,
-        image: categoryImage,
-        createdAt: new Date(),
-      });
-
-      await fetchCategories();
-      resetCategoryForm();
-      alert("Category added successfully!");
-    } catch (error) {
-      console.error("Error adding category:", error);
-      setCategoryError("Category add karte waqt masla aaya hai.");
-    } finally {
-      setCategorySaving(false);
-    }
-  };
-
-  const openCategoryEdit = (category) => {
-    setEditingCategory(category);
-    setEditCategoryName(category.name || "");
-    setEditCategoryImage(category.image || "");
-    setEditCategoryImagePreview(category.image || "");
-  };
-
-  const closeCategoryEdit = () => {
-    if (categoryUpdating) return;
-    setEditingCategory(null);
-    setEditCategoryName("");
-    setEditCategoryImage("");
-    setEditCategoryImagePreview("");
-  };
-
-  const handleUpdateCategory = async (e) => {
-    e.preventDefault();
-    if (!editingCategory) return;
-
-    const name = editCategoryName.trim();
-    if (!name) {
-      alert("Category name is required.");
-      return;
-    }
-
-    setCategoryUpdating(true);
-
-    try {
-      await updateDoc(doc(db, "categories", editingCategory.id), {
-        name,
-        image: editCategoryImage || editingCategory.image || "",
-        updatedAt: new Date(),
-      });
-
-      await fetchCategories();
-      closeCategoryEdit();
-      alert("Category updated successfully!");
-    } catch (error) {
-      console.error("Error updating category:", error);
-      alert("Failed to update category.");
-    } finally {
-      setCategoryUpdating(false);
-    }
-  };
-
-  const handleDeleteCategory = async (category) => {
-    const confirmed = window.confirm(
-      `Delete category "${category.name || "Untitled Category"}"?`
-    );
-    if (!confirmed) return;
-
-    try {
-      await deleteDoc(doc(db, "categories", category.id));
-      await fetchCategories();
-      alert("Category deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      alert("Failed to delete category.");
-    }
-  };
-
-  const handleCategoryPreview = (category) => setSelectedCategory(category);
-  const closeCategoryPreview = () => setSelectedCategory(null);
-
-  /*
-  const handleUpdateCategory = async (e) => {
-  e.preventDefault();
-  if (!editingCategory) return;
-
-  setUpdatingCategory(true);
-  try {
-    const categoryRef = doc(db, "categories", editingCategory.id);
-    await updateDoc(categoryRef, {
-      name: editCategoryName,
-      image: editCategoryImage || editingCategory.image || "",
-    });
-
-    alert("Category updated successfully!");
-    setEditingCategory(null);
-    if (typeof fetchCategories === 'function') fetchCategories();
-  } catch (error) {
-    console.error("Error updating category:", error);
-    alert("Failed to update category.");
-  } finally {
-    setUpdatingCategory5(false); // ya setUpdatingCategory(false)
-  }
-};
-<div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mt-6">
-  <h3 className="text-base font-black text-slate-900 mb-4">All Categories</h3>
-  <div className="overflow-x-auto">
-    <table className="w-full text-left border-collapse">
-      <thead>
-        <tr className="border-b border-slate-100 text-[11px] uppercase tracking-wider text-slate-400">
-          <th className="py-3 px-4">Image</th>
-          <th className="py-3 px-4">Category Name</th>
-          <th className="py-3 px-4 text-right">Actions</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-slate-100 text-xs">
-        {categories.length === 0 ? (
-          <tr>
-            <td colSpan="3" className="py-4 text-center text-slate-400">No categories found.</td>
-          </tr>
-        ) : (
-          categories.map((cat) => (
-            <tr key={cat.id} className="hover:bg-slate-50 transition">
-              <td className="py-3 px-4">
-                {cat.image ? (
-                  <img src={cat.image} alt={cat.name} className="w-10 h-10 object-cover rounded-lg border border-slate-200" />
-                ) : (
-                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] text-slate-400">No img</div>
-                )}
-              </td>
-              <td className="py-3 px-4 font-bold text-slate-800">{cat.name}</td>
-              <td className="py-3 px-4 text-right">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingCategory(cat);
-                    setEditCategoryName(cat.name);
-                    setEditCategoryImage(cat.image || "");
-                  }}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 rounded-lg font-semibold transition"
-                >
-                  Edit
-                </button>
-              </td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
-  </div>
-</div>
   ============================================================
   FETCH ORDERS
   ============================================================
@@ -1226,7 +829,7 @@ function AdminDashboard() {
                     </h1>
 
                     <p className="text-xs text-slate-500 mt-1">
-                      Here's what's happening with your Ahsan Jewellery store.
+                      Here's what's happening with your Ahsan store.
                     </p>
                   </div>
 
@@ -1861,232 +1464,69 @@ function AdminDashboard() {
 
               {activeTab === "add-category" && (
                 <div className="space-y-6">
-                  {/* ADD CATEGORY */}
-                  <div className="border border-slate-200 rounded-2xl p-5 sm:p-6 bg-white">
-                    <div className="mb-5">
-                      <h3 className="text-lg font-black text-slate-900">Category Management</h3>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Add, edit, preview aur delete categories yahan se manage karein.
-                      </p>
-                    </div>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900">
+                      Category Management
+                    </h3>
 
-                    <form onSubmit={handleAddCategory} className="space-y-4">
+                    <p className="text-xs text-slate-400 mt-1">
+                      Categories ProductForm ke andar manage hoti hain.
+                    </p>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-2xl p-6 bg-slate-50">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                          Category Name
-                        </label>
-                        <input
-                          type="text"
-                          value={categoryName}
-                          onChange={(e) => setCategoryName(e.target.value)}
-                          placeholder="Category Name"
-                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-slate-900 transition"
-                        />
+                        <p className="text-xs font-bold text-slate-900">
+                          {categories.length} Categories Available
+                        </p>
+
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          Add, edit aur delete categories ProductForm mein
+                          available hain.
+                        </p>
                       </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-4 items-start">
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                            Category Image
-                          </label>
-                          <input
-                            type="file"
-                            accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.avif,.ico,.heic,.heif,.jfif,.pjpeg,.pjp"
-                            onChange={handleCategoryImageChange}
-                            className="w-full text-xs text-slate-600 file:mr-3 file:px-3 file:py-2 file:border-0 file:rounded-lg file:bg-slate-900 file:text-white file:text-[10px] file:font-bold file:cursor-pointer"
-                          />
-                          <p className="text-[9px] text-slate-400 mt-2">JPG, JPEG, PNG, WEBP, GIF, SVG, AVIF etc.</p>
-                        </div>
-
-                        <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-                          <div className="aspect-square flex items-center justify-center">
-                            {categoryImagePreview ? (
-                              <img src={categoryImagePreview} alt="Category preview" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-[10px] text-slate-400">Image Preview</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {categoryError && (
-                        <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-xs font-semibold text-rose-600">
-                          {categoryError}
-                        </div>
-                      )}
 
                       <button
-                        type="submit"
-                        disabled={categorySaving}
-                        className="px-5 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition disabled:opacity-50"
+                        type="button"
+                        onClick={goToAddProduct}
+                        className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition"
                       >
-                        {categorySaving ? "Adding..." : "Add Category"}
+                        Open Category Manager
                       </button>
-                    </form>
+                    </div>
                   </div>
 
-                  {/* ALL CATEGORIES */}
-                  <div className="border border-slate-200 rounded-2xl p-5 sm:p-6 bg-white">
-                    <div className="flex items-center justify-between gap-3 mb-5">
-                      <h4 className="text-base font-black text-slate-900">All Categories</h4>
-                      <span className="text-[10px] font-bold text-slate-400">{categories.length} Categories</span>
-                    </div>
-
-                    {categories.length === 0 ? (
-                      <div className="border-2 border-dashed border-slate-200 rounded-2xl py-16 text-center">
-                        <div className="text-3xl">🏷️</div>
-                        <p className="text-sm font-bold text-slate-700 mt-3">No Categories Found</p>
-                        <p className="text-xs text-slate-400 mt-1">Add your first category above.</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {categories.map((category) => (
-                          <div key={category.id} className="border border-slate-200 rounded-2xl overflow-hidden bg-white hover:shadow-md transition">
-                            <button
-                              type="button"
-                              onClick={() => handleCategoryPreview(category)}
-                              className="block w-full aspect-square bg-slate-50 overflow-hidden"
-                              title="Preview category image"
-                            >
-                              {category.image ? (
-                                <img
-                                  src={category.image}
-                                  alt={category.name || "Category"}
-                                  className="w-full h-full object-cover hover:scale-105 transition duration-300"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-xs bg-slate-50">
-                                  <span className="text-slate-400">Image Missing</span>
-                                  <span className="text-[9px] text-rose-400">Upload image from Edit</span>
-                                </div>
-                              )}
-                            </button>
-
-                            <div className="p-3">
-                              <p className="text-xs font-black text-slate-900 truncate">
-                                {category.name || "Untitled Category"}
-                              </p>
-
-                              <div className="grid grid-cols-2 gap-2 mt-3">
-                                <button
-                                  type="button"
-                                  onClick={() => handleCategoryPreview(category)}
-                                  className="px-2 py-2 bg-slate-100 text-slate-700 rounded-lg text-[9px] font-bold hover:bg-slate-200 transition"
-                                >
-                                  Preview
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => openCategoryEdit(category)}
-                                  className="px-2 py-2 bg-slate-900 text-white rounded-lg text-[9px] font-bold hover:bg-slate-800 transition"
-                                >
-                                  Edit
-                                </button>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteCategory(category)}
-                                className="w-full mt-2 px-2 py-2 bg-white border border-slate-200 text-rose-500 rounded-lg text-[9px] font-bold hover:bg-rose-50 hover:border-rose-200 transition"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* EDIT CATEGORY MODAL */}
-                  {editingCategory && (
-                    <div className="fixed inset-0 z-[110] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={closeCategoryEdit}>
-                      <div className="w-full max-w-lg bg-white rounded-2xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-                          <div>
-                            <h3 className="text-sm font-black text-slate-900">Edit Category</h3>
-                            <p className="text-[10px] text-slate-400 mt-1">Category name aur image update karein.</p>
-                          </div>
-                          <button type="button" onClick={closeCategoryEdit} disabled={categoryUpdating} className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white transition disabled:opacity-50">✕</button>
-                        </div>
-
-                        <form onSubmit={handleUpdateCategory} className="p-5 space-y-4">
-                          <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Category Name</label>
-                            <input
-                              type="text"
-                              value={editCategoryName}
-                              onChange={(e) => setEditCategoryName(e.target.value)}
-                              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-slate-900 transition"
+                  {categories.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {categories.map((category) => (
+                        <div
+                          key={category.id}
+                          className="border border-slate-200 rounded-2xl p-4 flex items-center gap-3"
+                        >
+                          {category.image ? (
+                            <img
+                              src={category.image}
+                              alt={category.name}
+                              className="w-12 h-12 rounded-xl object-cover border border-slate-200"
                             />
-                          </div>
-
-                          <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Change Image</label>
-                            <input
-                              type="file"
-                              accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.avif,.ico,.heic,.heif,.jfif,.pjpeg,.pjp"
-                              onChange={handleEditCategoryImageChange}
-                              className="w-full text-xs text-slate-600 file:mr-3 file:px-3 file:py-2 file:border-0 file:rounded-lg file:bg-slate-900 file:text-white file:text-[10px] file:font-bold file:cursor-pointer"
-                            />
-                          </div>
-
-                          <div className="w-full max-w-xs mx-auto border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-                            <div className="aspect-square flex items-center justify-center">
-                              {editCategoryImagePreview ? (
-                                <img src={editCategoryImagePreview} alt="Edit category preview" className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="text-[10px] text-slate-400">No Image</span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex gap-2 pt-2">
-                            <button type="button" onClick={closeCategoryEdit} disabled={categoryUpdating} className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition disabled:opacity-50">Cancel</button>
-                            <button type="submit" disabled={categoryUpdating} className="flex-1 px-4 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition disabled:opacity-50">
-                              {categoryUpdating ? "Updating..." : "Update Category"}
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* CATEGORY PREVIEW MODAL */}
-                  {selectedCategory && (
-                    <div className="fixed inset-0 z-[100] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={closeCategoryPreview}>
-                      <div className="w-full max-w-2xl bg-white rounded-2xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-                          <div className="min-w-0">
-                            <h3 className="text-sm font-black text-slate-900 truncate">{selectedCategory.name || "Category Preview"}</h3>
-                            <p className="text-[10px] text-slate-400 mt-1">Category Image Preview</p>
-                          </div>
-                          <button type="button" onClick={closeCategoryPreview} className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white transition">✕</button>
-                        </div>
-
-                        <div className="p-5 bg-slate-50 flex items-center justify-center min-h-[50vh]">
-                          {selectedCategory.image ? (
-                            <img src={selectedCategory.image} alt={selectedCategory.name || "Category"} className="max-w-full max-h-[65vh] object-contain rounded-xl shadow-sm" />
                           ) : (
-                            <div className="text-sm text-slate-400">No category image available.</div>
+                            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
+                              🏷️
+                            </div>
                           )}
-                        </div>
 
-                        <div className="p-5 border-t border-slate-100 flex gap-2">
-                          <button type="button" onClick={closeCategoryPreview} className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition">Close</button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const category = selectedCategory;
-                              closeCategoryPreview();
-                              openCategoryEdit(category);
-                            }}
-                            className="flex-1 px-4 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition"
-                          >
-                            Edit Category
-                          </button>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900 truncate">
+                              {category.name}
+                            </p>
+
+                            <p className="text-[9px] text-slate-400 mt-1">
+                              Category
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
                   )}
                 </div>

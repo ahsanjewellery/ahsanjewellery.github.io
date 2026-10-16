@@ -1,10 +1,27 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App.jsx';
-import './styles/global.css'; // Global stylesheet import correctly mapped
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { HashRouter } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async"; // <-- HelmetProvider import kiya
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+import App from "./App.jsx";
+import { CartProvider } from "./context/CartContext.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx";
+import { StoreProvider } from "./context/StoreContext.jsx";
+
+import "./index.css";
+
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
+    <HashRouter>
+      <HelmetProvider> {/* <-- Yahan HelmetProvider add kar diya hai */}
+        <AuthProvider>
+          <CartProvider>
+            <StoreProvider>
+              <App />
+            </StoreProvider>
+          </CartProvider>
+        </AuthProvider>
+      </HelmetProvider>
+    </HashRouter>
+  </StrictMode>
 );

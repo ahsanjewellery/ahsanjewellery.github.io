@@ -1,104 +1,68 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from "react";
 
-const heroImages = ['Hero', 'Hero1', 'Hero2'];
+// Local images from src/assets
+import banner1 from "../assets/banner1.jpg";
+import banner2 from "../assets/banner2.jpg";
+import banner3 from "../assets/banner3.jpg";
 
-export default function Hero() {
+function Hero() {
+  const banners = [
+    { image: banner1 },
+    { image: banner2 },
+    { image: banner3 }
+  ];
+
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Automatic slide change every 4 seconds
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % heroImages.length);
-    }, 4000);
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % banners.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [banners.length]);
 
-    return () => clearInterval(timer);
-  }, []);
+  const currentBanner = banners[currentIndex];
 
   return (
-    <>
-      <style>{`
-        .hero-section {
-          width: 100%;
-          margin: 0;
-          padding: 0;
-          background: #f4eee8;
-          overflow: hidden;
-          position: relative;
-        }
-
-        .hero-banner {
-          width: 100%;
-          margin: 0;
-          padding: 0;
-          line-height: 0;
-          overflow: hidden;
-        }
-
-        .hero-banner img {
-          display: block;
-          width: 100%;
-          height: auto;
-          max-width: 100%;
-          margin: 0;
-          padding: 0;
-          object-fit: contain;
-          object-position: center;
-          transition: opacity 0.5s ease-in-out;
-        }
-
-        @media (max-width: 900px) {
-          .hero-banner img {
-            width: 100%;
-            height: auto;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .hero-banner img {
-            width: 100%;
-            height: auto;
-          }
-        }
-      `}</style>
-
-      <div className="hero-section">
-        {heroImages.map((name, index) => (
-          <div 
-            key={`${name}-${index}`} 
-            className="hero-slide" 
-            style={{ 
-              display: index === currentIndex ? 'block' : 'none',
-              width: '100%' 
-            }}
+    <section className="w-full bg-[#111111] overflow-hidden select-none">
+      <div className="relative w-full aspect-[16/10] sm:aspect-[21/9] lg:aspect-[2.8/1] flex items-center">
+        
+        {/* FULL WIDTH BACKGROUND IMAGES WITH SMOOTH FADE */}
+        {banners.map((b, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              index === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0"
+            }`}
           >
-            {index === currentIndex && <HeroSlide imageName={name} />}
+            <img
+              src={b.image}
+              alt="Jewelry Banner"
+              className="w-full h-full object-cover object-center scale-105 transition-transform duration-1000"
+            />
           </div>
         ))}
+
+        {/* CAROUSEL DOTS INDICATORS */}
+        <div className="absolute bottom-5 left-6 sm:left-10 lg:left-16 z-30 flex items-center gap-2">
+          {banners.map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => setCurrentIndex(index)}
+              aria-label={`Slide ${index + 1}`}
+              className={`rounded-full transition-all duration-300 cursor-pointer ${
+                index === currentIndex
+                  ? "w-8 h-1 bg-[#C5A059]"
+                  : "w-1.5 h-1.5 bg-white/50 hover:bg-white"
+              }`}
+            />
+          ))}
+        </div>
+
       </div>
-    </>
+    </section>
   );
 }
 
-// Extension fallback handler (.jpg, .avif, .png, .webp)
-function HeroSlide({ imageName }) {
-  const extensions = ['.jpg', '.avif', '.png', '.webp', ''];
-  const [extIndex, setExtIndex] = useState(0);
-
-  const currentSrc = `/images/Hero/${imageName}${extensions[extIndex]}`;
-
-  const handleError = () => {
-    if (extIndex < extensions.length - 1) {
-      setExtIndex(extIndex + 1);
-    }
-  };
-
-  return (
-    <div className="hero-banner">
-      <img 
-        src={currentSrc} 
-        alt={imageName} 
-        onError={handleError}
-      />
-    </div>
-  );
-}
+export default Hero;
