@@ -4,7 +4,7 @@ import { CartContext } from "../context/CartContext";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 
-// Helper function to handle string or Cloudinary object image formats
+// Helper function to handle string or object image formats
 const extractImageUrl = (item) => {
   if (!item) return null;
   if (typeof item === "string") return item.trim();
@@ -20,7 +20,6 @@ function FeaturedProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Track selected image and variant per product dynamically: { [productId]: { image, colorName } }
   const [productSelections, setProductSelections] = useState({});
 
   useEffect(() => {
@@ -32,7 +31,6 @@ function FeaturedProducts() {
           ...doc.data(),
         }));
 
-        // Flexible filter taake featured/bestseller products asani se catch ho jayein
         const filteredFeatured = productsList.filter((p) => {
           return (
             p.featured === true || 
@@ -45,12 +43,10 @@ function FeaturedProducts() {
           );
         });
 
-        // Agar filtered list empty ho (matlab kisi par featured check nahi laga), toh fallback ke tor par saare products dikha sakte hain ya empty rakh sakte hain
         const finalProductsToDisplay = filteredFeatured.length > 0 ? filteredFeatured : productsList.slice(0, 8);
 
         setProducts(finalProductsToDisplay);
 
-        // Initialize default selections
         const initialSelections = {};
         finalProductsToDisplay.forEach((prod) => {
           const defaultImg =
@@ -79,8 +75,8 @@ function FeaturedProducts() {
     setProductSelections((prev) => ({
       ...prev,
       [productId]: {
-        image: extractImageUrl(variant.imageUrl) || prev[productId]?.image,
-        colorName: variant.colorName,
+        image: extractImageUrl(variant.image) || extractImageUrl(variant.imageUrl) || prev[productId]?.image,
+        colorName: variant.colorName || "Default",
       },
     }));
   };
@@ -132,7 +128,6 @@ function FeaturedProducts() {
             (Array.isArray(product.images) && extractImageUrl(product.images[0])) ||
             "https://via.placeholder.com/400x500?text=No+Image";
 
-          // Calculate Discount percentage
           const discountPercent =
             product.originalPrice &&
             Number(product.originalPrice) > Number(product.price)
@@ -151,7 +146,7 @@ function FeaturedProducts() {
               {/* Product Image Container */}
               <div className="relative overflow-hidden rounded-xl bg-[#f9f9f9] aspect-[4/5] shadow-sm">
                 
-                {/* Larger & Bold Black & White Discount Badge */}
+                {/* Discount Badge */}
                 <div className="absolute top-3 left-3 z-30 bg-black text-white px-5 py-2 rounded-lg text-xs sm:text-sm font-black tracking-widest shadow-lg flex items-center justify-center uppercase border border-neutral-800">
                   {discountPercent}% OFF
                 </div>
@@ -201,10 +196,12 @@ function FeaturedProducts() {
                 </div>
               </div>
 
-              {/* Color Swatches Section */}
+              {/* Color / Variant Swatches Section (Safely Rendered) */}
               {Array.isArray(product.variants) && product.variants.length > 0 && (
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
                   {product.variants.map((v, i) => {
+                    // Sirf valid variant dikhayein jiska color ya image ho
+                    if (!v || (!v.colorCode && !v.colorName && !v.image && !v.imageUrl)) return null;
                     const isSelected = currentSelection.colorName === v.colorName;
                     return (
                       <button
@@ -217,7 +214,7 @@ function FeaturedProducts() {
                             ? "ring-2 ring-gray-900 ring-offset-2 scale-110"
                             : "hover:scale-105 border border-gray-300 opacity-80 hover:opacity-100"
                         }`}
-                        title={v.colorName}
+                        title={v.colorName || `Variant ${i + 1}`}
                       />
                     );
                   })}
